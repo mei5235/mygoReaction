@@ -1,8 +1,19 @@
 HELP.md
+
+# Maven target directories
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+
+# IDE project files
+.idea/
+*.iml
+*.ipr
+*.iws
+.metadata/
+.classpath
+.project
 
 ### STS ###
 .apt_generated
