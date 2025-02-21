@@ -1,6 +1,5 @@
 package com.example.mygoReaction.entity;
 
-
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,21 +11,17 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name="test2")
-public class Test2Entity {
+@Table(name="saved_series")
+public class SavedSeriesEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
-
     private Integer seriesId;
 
-    private java.time.Instant start_Time;
+    private String series_name;
 
-    private java.time.Instant end_Time;
+    private Integer season;
 
-    private String line;
+    private Integer episode;
 
     private String created_by;
-
-    //    private java.time.Instant created_timestamp;
 }

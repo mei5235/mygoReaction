@@ -1,6 +1,8 @@
 package com.example.mygoReaction.controller;
 
+import com.example.mygoReaction.entity.SavedSeriesEntity;
 import com.example.mygoReaction.entity.Test2Entity;
+import com.example.mygoReaction.repository.SavedSeriesRepository;
 import com.example.mygoReaction.repository.Test2Repository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,8 +32,10 @@ public class Time2Controller {
     private static final Logger log = LoggerFactory.getLogger(Time2Controller.class);
 
     private final Test2Repository test2Repository;
-    public Time2Controller(Test2Repository test2Repository) {
+    private final SavedSeriesRepository savedSeriesRepository;
+    public Time2Controller(Test2Repository test2Repository, SavedSeriesRepository savedSeriesRepository) {
         this.test2Repository = test2Repository;
+        this.savedSeriesRepository = savedSeriesRepository;
     }
 
     @RequestMapping(method = RequestMethod.GET, value="/findAll")
@@ -68,11 +72,26 @@ public class Time2Controller {
 
         // information array from subtitle filename
         // 0: series_name, 1: season, 2: episode
-        String[] arr = subtitleFileName.split("-");
+
+        String[] arr = removeFileExtension(subtitleFileName).split("-");
         if(arr.length<3) {
             return ResponseEntity
                     .badRequest()
                     .body("Inappropriate subtitle filename.");
+        }
+
+        SavedSeriesEntity.Builder sseb = SavedSeriesEntity.builder();
+        sseb.series_name(arr[0])
+                .season(Integer.parseInt(arr[1].substring(1)))
+                .episode(Integer.parseInt(arr[2].substring(1)))
+                .created_by("Spring Boot");
+        SavedSeriesEntity savedSeriesResp = null;
+        try {
+            savedSeriesResp = savedSeriesRepository.save(sseb.build());
+        } catch (Exception e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(e.getMessage());
         }
 
         try(FileReader fr = new FileReader(subtitleFile)){
@@ -90,14 +109,12 @@ public class Time2Controller {
                         .map(String::trim) //trim the space in each element // String::trim == str.trim()
                         .toArray(String[]::new);
 
-                Test2Entity.Test2EntityBuilder t2e = Test2Entity.builder();
-                t2e.series_name(arr[0])
-                        .season(Integer.parseInt(arr[1].substring(1)))
-                        .episode(Integer.parseInt(arr[2].substring(1)))
+                Test2Entity.Builder t2e = Test2Entity.builder();
+                t2e.seriesId(savedSeriesResp.getSeriesId())
                         .start_Time(Instant.parse("1970-01-01T0"+subArr[1]+"Z")) //TODO padding the hour to 2 digit with 0
                         .end_Time(Instant.parse("1970-01-01T0"+subArr[2]+"Z")) //TODO padding the hour to 2 digit with 0
                         .line(subArr[9])
-                        .crated_by("Spring Boot");
+                        .created_by("Spring Boot");
                 test2Repository.save(t2e.build());
             }
 
@@ -115,6 +132,15 @@ public class Time2Controller {
                 }
             }
         }
+
         return ResponseEntity.ok().body("Success");
+    }
+
+    public static String removeFileExtension(String fileName) {
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex == -1) {
+            return fileName; // No extension found
+        }
+        return fileName.substring(0, lastDotIndex);
     }
 }
