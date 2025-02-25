@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Getter
 @Builder(builderClassName = "Builder", toBuilder = true)
@@ -28,5 +30,15 @@ public class Test2Entity {
 
     private String created_by;
 
-    //    private java.time.Instant created_timestamp;
+    private String screen_cap_path;
+
+    private byte[] screen_cap_thumbnail;
+
+    @CreationTimestamp
+    private java.time.Instant created_timestamp;
+
+    private String updated_by;
+
+    @UpdateTimestamp
+    private java.time.Instant updated_timestamp;
 }
