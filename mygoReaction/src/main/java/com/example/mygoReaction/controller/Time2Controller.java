@@ -14,9 +14,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.mock.web.MockMultipartFile;
+
+
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.nio.file.Files;
 import java.io.FileReader;
 import java.io.IOException;
 import java.time.Instant;
@@ -43,6 +48,7 @@ public class Time2Controller {
         List<Test2Entity> resp = test2Repository.findAll();
         return resp;
     }
+
 
     @RequestMapping(method = RequestMethod.GET, value="/findByDateBetween")
     public List<Test2Entity> hehe(@RequestParam("start_date") String startDateStr, @RequestParam("end_date") String endDateStr){
@@ -114,7 +120,8 @@ public class Time2Controller {
                         .start_Time(Instant.parse("1970-01-01T0"+subArr[1]+"Z")) //TODO padding the hour to 2 digit with 0
                         .end_Time(Instant.parse("1970-01-01T0"+subArr[2]+"Z")) //TODO padding the hour to 2 digit with 0
                         .line(subArr[9])
-                        .created_by("Spring Boot");
+                        .created_by("Spring Boot")
+                        .updated_by("Spring Boot");
                 test2Repository.save(t2e.build());
             }
 
@@ -134,6 +141,42 @@ public class Time2Controller {
         }
 
         return ResponseEntity.ok().body("Success");
+    }
+
+    @RequestMapping("/testSaveImage")
+    public ResponseEntity<String> hehehehe(@RequestParam("filename") String filename){
+        String pathFromResource = "image/";
+        File imageTestFile = null;
+        BufferedReader bfr = null;
+
+        try {
+            imageTestFile = resourceLoader
+                    .getResource("classpath:"+pathFromResource+filename)
+                    .getFile();
+            byte[] content = null;
+            try {
+                content = Files.readAllBytes(imageTestFile.toPath());
+            } catch (final IOException e) {
+            }
+            MultipartFile result = new MockMultipartFile(filename,
+                    filename, "image/jpeg", content);
+
+            Test2Entity record = test2Repository.findById(1).get();
+            test2Repository.save(
+                    record.toBuilder()
+                    .screen_cap_thumbnail(result.getBytes())
+                    .screen_cap_path(imageTestFile.toPath().toString())
+                    .updated_by("update spring")
+                    .build()
+            );
+
+        } catch (IOException e) {
+            return new ResponseEntity<>(
+                    "Specified subtitle file not found",
+                    HttpStatusCode.valueOf(500)
+            );
+        }
+        return ResponseEntity.ok("Success");
     }
 
     public static String removeFileExtension(String fileName) {
