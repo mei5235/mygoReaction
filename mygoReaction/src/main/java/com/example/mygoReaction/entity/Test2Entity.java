@@ -2,10 +2,7 @@ package com.example.mygoReaction.entity;
 
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -17,25 +14,28 @@ import org.hibernate.annotations.UpdateTimestamp;
 @Table(name="test2")
 public class Test2Entity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Integer id;
 
     private Integer seriesId;
 
-    private java.time.Instant start_Time;
+    @Column(name="start_time")
+    private java.time.Instant startTime;
 
-    private java.time.Instant end_Time;
+    @Column(name="end_time")
+    private java.time.Instant endTime;
 
     private String line;
-
-    private String created_by;
 
     private String screen_cap_path;
 
     private byte[] screen_cap_thumbnail;
 
+    private String created_by;
+
     @CreationTimestamp
-    private java.time.Instant created_timestamp;
+    @Column(name = "created_timestamp")
+    private java.time.Instant createdTimestamp;
 
     private String updated_by;
 

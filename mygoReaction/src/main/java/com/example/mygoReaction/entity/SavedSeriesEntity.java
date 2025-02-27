@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 
 @Getter
 @Builder(builderClassName = "Builder", toBuilder = true)
@@ -14,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Table(name="saved_series")
 public class SavedSeriesEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Integer seriesId;
 
     private String series_name;
@@ -24,4 +25,7 @@ public class SavedSeriesEntity {
     private Integer episode;
 
     private String created_by;
+
+    @CreationTimestamp
+    private java.time.Instant created_timestamp;
 }
