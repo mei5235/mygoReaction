@@ -37,6 +37,12 @@ public class Time2Controller {
         return test2Service.hehe(startDateStr, endDateStr);
     }
 
+    @RequestMapping(method = RequestMethod.GET, value="/s")
+    public void s(){
+        test2Service.s();
+        log.info("success");
+    }
+
     @RequestMapping(method = RequestMethod.POST, value = "importFromSubtitle")
     public ResponseEntity<String> hehehe(@RequestParam("subtitle_filename") String subtitleFileName){
         ResponseEntity<String> resp = null;

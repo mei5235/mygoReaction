@@ -6,6 +6,10 @@ import com.example.mygoReaction.entity.Test2Entity;
 import com.example.mygoReaction.repository.SavedSeriesRepository;
 import com.example.mygoReaction.repository.Test2Repository;
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.FrameGrabber;
+import org.bytedeco.javacv.Java2DFrameConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatusCode;
@@ -14,12 +18,16 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
 import java.util.List;
 
@@ -54,16 +62,60 @@ public class Test2Service {
 //        return null;
     }
 
+    public void s(){
+        String pathFromResource = "./asset/video/SampleVideo_1280x720_30mb.mp4";
+
+        File testVideoFile = null;
+        try {
+            testVideoFile = new File(pathFromResource);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new RuntimeException(e);
+        }
+
+        try(
+                FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(testVideoFile);
+                Java2DFrameConverter converter = new Java2DFrameConverter();
+        ){
+            grabber.start();
+            // get max timestamp of the video
+            long timeLength = grabber.getLengthInTime();
+
+            // get initial timestamp
+            Frame frame = grabber.grabImage();
+            long startTime = frame.timestamp;
+
+//            int second = 60;
+            Instant he = Instant.parse("1970-01-01T00:00:00.000+08:00");
+            Instant startTimestamp = Instant.parse("1970-01-01T00:01:00.123+08:00");
+//            long second = startTimestamp.getEpochSecond();
+            long second = he.until(startTimestamp, ChronoUnit.SECONDS);
+            long timestamp = startTime + second * 1000000L; // 1 minute and 123 milliseconds
+
+            grabber.setTimestamp(timestamp);
+            frame = grabber.grabImage();
+            if (frame != null) {
+                BufferedImage bufferedImage = converter.getBufferedImage(frame);
+                ImageIO.write(bufferedImage, "png", new File("./asset/screen_cap/out.png"));
+                log.info("Frame extracted and saved as " + "out.png");
+            } else {
+                log.error("No frame found at the specified timestamp.");
+            }
+            grabber.stop();
+        } catch (FrameGrabber.Exception e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public ResponseEntity<String> hehehe(String subtitleFilename){
-        String pathFromResource = "my_go_subtitle/";
+        String pathFromResource = "./asset/subtitle/";
         File subtitleFile = null;
-        BufferedReader bfr = null;
 
         try {
-            subtitleFile = resourceLoader
-                    .getResource("classpath:"+pathFromResource+subtitleFilename)
-                    .getFile();
-        } catch (IOException e) {
+            subtitleFile = new File(pathFromResource+subtitleFilename);
+        } catch (NullPointerException e) {
             return new ResponseEntity<>(
                     "Specified subtitle file not found",
                     HttpStatusCode.valueOf(500)
@@ -95,8 +147,11 @@ public class Test2Service {
         }
 
         // process the subtitle and record in test2 table
-        try(FileReader fr = new FileReader(subtitleFile)){
-            bfr = new BufferedReader(fr);
+        try(
+                FileReader fr = new FileReader(subtitleFile);
+                BufferedReader bfr = new BufferedReader(fr);
+        ){
+
             String line = "";
             while(!((line = bfr.readLine()) == null)){
                 if(!line.matches("Dialogue: [0-9:,\\.]+,Dial_CH,.+"))
@@ -125,14 +180,6 @@ public class Test2Service {
                     "Error occurred when importing subtitles into DB.",
                     HttpStatusCode.valueOf(500)
             );
-        }finally {
-            if(!(bfr==null)){
-                try {
-                    bfr.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
 
         return ResponseEntity.ok().body("Success");
