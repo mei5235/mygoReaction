@@ -1,7 +1,7 @@
 package com.example.mygoReaction.controller;
 
 import com.example.mygoReaction.entity.Test2Entity;
-import com.example.mygoReaction.service.Test2Service;
+import com.example.mygoReaction.service.Impl.Test2ServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -19,27 +19,27 @@ public class Time2Controller {
 
     private static final Logger log = LoggerFactory.getLogger(Time2Controller.class);
 
-    private final Test2Service test2Service;
+    private final Test2ServiceImpl test2ServiceImpl;
     public Time2Controller(
-            Test2Service test2Service
+            Test2ServiceImpl test2ServiceImpl
     ) {
-        this.test2Service = test2Service;
+        this.test2ServiceImpl = test2ServiceImpl;
     }
 
     @RequestMapping(method = RequestMethod.GET, value="/findAll")
     public List<Test2Entity> he(){
-        return test2Service.he();
+        return test2ServiceImpl.he();
     }
 
 
     @RequestMapping(method = RequestMethod.GET, value="/findByDateBetween")
     public List<Test2Entity> hehe(@RequestParam("start_date") String startDateStr, @RequestParam("end_date") String endDateStr){
-        return test2Service.hehe(startDateStr, endDateStr);
+        return test2ServiceImpl.hehe(startDateStr, endDateStr);
     }
 
     @RequestMapping(method = RequestMethod.GET, value="/s")
     public void s(){
-        test2Service.s();
+        test2ServiceImpl.s();
         log.info("success");
     }
 
@@ -47,7 +47,7 @@ public class Time2Controller {
     public ResponseEntity<String> hehehe(@RequestParam("subtitle_filename") String subtitleFileName){
         ResponseEntity<String> resp = null;
         try{
-            resp = test2Service.hehehe(subtitleFileName);
+            resp = test2ServiceImpl.hehehe(subtitleFileName);
         }catch (Exception e){
             log.error("error");
         }
@@ -58,7 +58,7 @@ public class Time2Controller {
     public ResponseEntity<String> hehehehe(@RequestParam("filename") String filename){
         ResponseEntity<String> resp = null;
         try {
-            test2Service.hehehehe(filename);
+            test2ServiceImpl.hehehehe(filename);
         } catch (Exception e) {
             log.error("error");
         }

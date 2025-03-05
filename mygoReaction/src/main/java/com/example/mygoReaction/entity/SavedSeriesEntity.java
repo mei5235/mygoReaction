@@ -12,10 +12,12 @@ import org.hibernate.annotations.CreationTimestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name="saved_series")
+@Table(name="saved_series",uniqueConstraints = { @UniqueConstraint(columnNames = { "series_name", "season" ,"episode"}) })
+@SequenceGenerator(name="saved_series_seq", allocationSize=1)
+
 public class SavedSeriesEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "saved_series_seq")
     private Integer seriesId;
 
     private String series_name;

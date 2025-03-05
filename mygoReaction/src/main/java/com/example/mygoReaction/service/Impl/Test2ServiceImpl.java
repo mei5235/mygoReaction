@@ -1,16 +1,18 @@
-package com.example.mygoReaction.service;
+package com.example.mygoReaction.service.Impl;
 
 
 import com.example.mygoReaction.entity.SavedSeriesEntity;
 import com.example.mygoReaction.entity.Test2Entity;
 import com.example.mygoReaction.repository.SavedSeriesRepository;
 import com.example.mygoReaction.repository.Test2Repository;
+import com.example.mygoReaction.service.SubtitleExtractService;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameGrabber;
 import org.bytedeco.javacv.Java2DFrameConverter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +29,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
 import java.util.List;
 
@@ -35,18 +36,22 @@ import static utils.FilenameUtils.removeFileExtension;
 
 @Slf4j
 @Service
-public class Test2Service {
+public class Test2ServiceImpl {
     @Autowired
     ResourceLoader resourceLoader;
 
+    SubtitleExtractService subtitleExtractService;
+
     private final Test2Repository test2Repository;
     private final SavedSeriesRepository savedSeriesRepository;
-    public Test2Service(
+    public Test2ServiceImpl(
             Test2Repository test2Repository,
-            SavedSeriesRepository savedSeriesRepository
+            SavedSeriesRepository savedSeriesRepository,
+            @Qualifier("SrtSubtitleExtractServiceImpl") SubtitleExtractService subtitleExtractService
     ) {
         this.test2Repository = test2Repository;
         this.savedSeriesRepository = savedSeriesRepository;
+        this.subtitleExtractService = subtitleExtractService;
     }
 
     public List<Test2Entity> he(){
@@ -147,35 +152,9 @@ public class Test2Service {
         }
 
         // process the subtitle and record in test2 table
-        try(
-                FileReader fr = new FileReader(subtitleFile);
-                BufferedReader bfr = new BufferedReader(fr);
-        ){
-
-            String line = "";
-            while(!((line = bfr.readLine()) == null)){
-                if(!line.matches("Dialogue: [0-9:,\\.]+,Dial_CH,.+"))
-                    continue;
-
-                // line sample
-                // Dialogue: 1,0:14:27.92,0:14:29.11,Dial_CH,,0,0,0,,昨天怎麼樣
-                line = line.replaceAll("Dialogue: ","");
-                String[] subArr = line.split(",");
-                subArr = Arrays.stream(subArr)
-                        .map(String::trim) //trim the space in each element // String::trim == str.trim()
-                        .toArray(String[]::new);
-
-                Test2Entity.Builder t2e = Test2Entity.builder();
-                t2e.seriesId(savedSeriesResp.getSeriesId())
-                        .startTime(Instant.parse("1970-01-01T0"+subArr[1]+"+08:00")) //TODO padding the hour to 2 digit with 0
-                        .endTime(Instant.parse("1970-01-01T0"+subArr[2]+"+08:00")) //TODO padding the hour to 2 digit with 0
-                        .line(subArr[9])
-                        .created_by("Spring Boot")
-                        .updated_by("Spring Boot");
-                test2Repository.save(t2e.build());
-            }
-
-        }catch(IOException e) {
+        try {
+            subtitleExtractService.insertSubtitleIntoDB(subtitleFile,savedSeriesResp.getSeriesId());
+        } catch (IOException e) {
             return new ResponseEntity<>(
                     "Error occurred when importing subtitles into DB.",
                     HttpStatusCode.valueOf(500)

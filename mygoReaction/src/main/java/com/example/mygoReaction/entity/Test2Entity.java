@@ -12,9 +12,11 @@ import org.hibernate.annotations.UpdateTimestamp;
 @AllArgsConstructor
 @Entity
 @Table(name="test2")
+@SequenceGenerator(name="test2_seq", allocationSize=1)
+
 public class Test2Entity {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE,generator = "test2_seq")
     private Integer id;
 
     private Integer seriesId;
