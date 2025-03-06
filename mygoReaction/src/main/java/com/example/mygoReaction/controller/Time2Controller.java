@@ -5,10 +5,7 @@ import com.example.mygoReaction.service.Impl.Test2ServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 
 import java.util.List;
@@ -26,32 +23,27 @@ public class Time2Controller {
         this.test2ServiceImpl = test2ServiceImpl;
     }
 
-    @RequestMapping(method = RequestMethod.GET, value="/findAll")
-    public List<Test2Entity> he(){
-        return test2ServiceImpl.he();
-    }
-
-
     @RequestMapping(method = RequestMethod.GET, value="/findByDateBetween")
-    public List<Test2Entity> hehe(@RequestParam("start_date") String startDateStr, @RequestParam("end_date") String endDateStr){
-        return test2ServiceImpl.hehe(startDateStr, endDateStr);
+    public List<Test2Entity> findByDateBetween(@RequestParam("start_date") String startDateStr, @RequestParam("end_date") String endDateStr){
+        return test2ServiceImpl.findByDateBetween(startDateStr, endDateStr);
     }
 
-    @RequestMapping(method = RequestMethod.GET, value="/s")
-    public void s(){
-        test2ServiceImpl.s();
+    @RequestMapping(method = RequestMethod.GET, value="/getScreenCapFromVideoByTimestamp")
+    public void getScreenCapFromVideoByTimestamp(){
+        test2ServiceImpl.getScreenCapFromVideoByTimestamp();
         log.info("success");
     }
 
     @RequestMapping(method = RequestMethod.POST, value = "importFromSubtitle")
-    public ResponseEntity<String> hehehe(@RequestParam("subtitle_filename") String subtitleFileName){
+    public ResponseEntity<String> importFromSubtitle(@RequestBody String subtitleFileName){
         ResponseEntity<String> resp = null;
         try{
-            resp = test2ServiceImpl.hehehe(subtitleFileName);
+            resp = test2ServiceImpl.importFromSubtitle(subtitleFileName);
         }catch (Exception e){
             log.error("error");
+            log.error(e.getMessage(),e);
         }
-        return resp; // FIXME
+        return resp;
     }
 
     @RequestMapping("/testSaveImage")
@@ -61,6 +53,7 @@ public class Time2Controller {
             test2ServiceImpl.hehehehe(filename);
         } catch (Exception e) {
             log.error("error");
+            log.error(e.getMessage(),e);
         }
         return resp;
     }

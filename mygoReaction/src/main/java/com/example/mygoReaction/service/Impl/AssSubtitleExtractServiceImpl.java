@@ -62,9 +62,11 @@ public class AssSubtitleExtractServiceImpl implements SubtitleExtractService {
             log.info("done import");
         }catch(IOException e) {
             log.error("Cannot read the content of the given file");
+            log.error(e.getMessage(),e);
             throw e;
         } catch (Exception e) {
             log.error("unexpected error");
+            log.error(e.getMessage(),e);
             throw e;
         }
         return true;

@@ -48,8 +48,13 @@ public class SrtSubtitleExtractServiceImpl implements SubtitleExtractService {
 
             String line = "";
             StringBuilder temp = new StringBuilder();
-            Test2Entity.Builder t2e = null; //
+            Test2Entity.Builder t2e = null;
             while(!((line = bfr.readLine()) == null)){
+                // remove illegal character "\uFEFF" if present
+                if(line.startsWith("\uFEFF"))
+                    line.replaceAll("\uFEFF","");
+
+                // mapping the info to the entity object
                 if (line.matches(patterns[0])) {
                     t2e = Test2Entity.builder().seriesId(seriesId);
                     continue;
@@ -78,10 +83,11 @@ public class SrtSubtitleExtractServiceImpl implements SubtitleExtractService {
             log.info("done import");
         }catch(IOException e) {
             log.error("Cannot read the content of the given file");
+            log.error(e.getMessage(),e);
             throw e;
         } catch (Exception e) {
             log.error("unexpected error");
-            log.error(e.getMessage());
+            log.error(e.getMessage(),e);
             throw e;
         }
         return true;

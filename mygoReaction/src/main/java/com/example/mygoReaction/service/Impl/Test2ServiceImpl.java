@@ -18,18 +18,18 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import utils.FilenameUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.List;
 
 import static utils.FilenameUtils.removeFileExtension;
@@ -54,12 +54,7 @@ public class Test2ServiceImpl {
         this.subtitleExtractService = subtitleExtractService;
     }
 
-    public List<Test2Entity> he(){
-        List<Test2Entity> resp = test2Repository.findAll();
-        return resp;
-    }
-
-    public List<Test2Entity> hehe(String startDateStr, String endDateStr){
+    public List<Test2Entity> findByDateBetween(String startDateStr, String endDateStr){
         Instant startDate = Instant.parse("1970-01-01T"+startDateStr+"+08:00");
         Instant endDate = Instant.parse("1970-01-01T"+endDateStr+"+08:00");
         List<Test2Entity> resp = test2Repository.findByTimeStamp(startDate,endDate);
@@ -67,14 +62,14 @@ public class Test2ServiceImpl {
 //        return null;
     }
 
-    public void s(){
-        String pathFromResource = "./asset/video/SampleVideo_1280x720_30mb.mp4";
+    public void getScreenCapFromVideoByTimestamp(){
+        String path = "./asset/video/SampleVideo_1280x720_30mb.mp4";
 
         File testVideoFile = null;
         try {
-            testVideoFile = new File(pathFromResource);
+            testVideoFile = new File(path);
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error(e.getMessage(),e);
             throw new RuntimeException(e);
         }
 
@@ -101,8 +96,9 @@ public class Test2ServiceImpl {
             frame = grabber.grabImage();
             if (frame != null) {
                 BufferedImage bufferedImage = converter.getBufferedImage(frame);
-                ImageIO.write(bufferedImage, "png", new File("./asset/screen_cap/out.png"));
-                log.info("Frame extracted and saved as " + "out.png");
+                String outputFilename = FilenameUtils.getUniqueOutputFilename("out.png");
+                ImageIO.write(bufferedImage, "png", new File("./asset/screen_cap/"+ outputFilename));
+                log.info("Frame extracted and saved as " + outputFilename);
             } else {
                 log.error("No frame found at the specified timestamp.");
             }
@@ -114,7 +110,8 @@ public class Test2ServiceImpl {
         }
     }
 
-    public ResponseEntity<String> hehehe(String subtitleFilename){
+    @Transactional
+    public ResponseEntity<String> importFromSubtitle(String subtitleFilename){
         String pathFromResource = "./asset/subtitle/";
         File subtitleFile = null;
 
