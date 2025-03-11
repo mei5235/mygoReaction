@@ -1,8 +1,8 @@
 package com.example.mygoReaction.service.Impl;
 
-import com.example.mygoReaction.entity.Test2Entity;
-import com.example.mygoReaction.constant.Test2Constant;
-import com.example.mygoReaction.repository.Test2Repository;
+import com.example.mygoReaction.entity.SavedLineEntity;
+import com.example.mygoReaction.constant.SavedLineConstant;
+import com.example.mygoReaction.repository.SavedLineRepository;
 import com.example.mygoReaction.service.SubtitleExtractService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -19,11 +19,11 @@ import java.util.Arrays;
 @Service
 @Qualifier("SrtSubtitleExtractServiceImpl")
 public class SrtSubtitleExtractServiceImpl implements SubtitleExtractService {
-    private final Test2Repository test2Repository;
+    private final SavedLineRepository savedLineRepository;
     public SrtSubtitleExtractServiceImpl(
-            Test2Repository test2Repository
+            SavedLineRepository savedLineRepository
     ) {
-        this.test2Repository = test2Repository;
+        this.savedLineRepository = savedLineRepository;
     }
 
 
@@ -49,7 +49,7 @@ public class SrtSubtitleExtractServiceImpl implements SubtitleExtractService {
 
             String line = "";
             StringBuilder temp = new StringBuilder();
-            Test2Entity.Builder t2e = null;
+            SavedLineEntity.Builder t2e = null;
             while(!((line = bfr.readLine()) == null)){
                 // remove illegal character "\uFEFF" if present
                 if(line.startsWith("\uFEFF"))
@@ -57,7 +57,7 @@ public class SrtSubtitleExtractServiceImpl implements SubtitleExtractService {
 
                 // mapping the info to the entity object
                 if (line.matches(patterns[0])) {
-                    t2e = Test2Entity.builder().seriesId(seriesId);
+                    t2e = SavedLineEntity.builder().seriesId(seriesId);
                     continue;
                 }
                 if (line.matches(patterns[1])) {
@@ -74,10 +74,10 @@ public class SrtSubtitleExtractServiceImpl implements SubtitleExtractService {
                     temp.append(" ").append(line);
                 }else {
                     t2e.line(temp.toString())
-                            .created_by(Test2Constant.createdBy)
-                            .updated_by(Test2Constant.createdBy);
+                            .created_by(SavedLineConstant.createdBy)
+                            .updated_by(SavedLineConstant.createdBy);
                     temp = new StringBuilder();
-                    test2Repository.save(t2e.build());
+                    savedLineRepository.save(t2e.build());
                     t2e = null;
                 }
             }

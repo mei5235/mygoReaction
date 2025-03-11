@@ -11,13 +11,14 @@ import org.hibernate.annotations.UpdateTimestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name="test2")
-@SequenceGenerator(name="test2_seq", allocationSize=1)
+@Table(name="saved_line")
+@SequenceGenerator(name="saved_line_seq", allocationSize=1)
 
-public class Test2Entity {
+public class SavedLineEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE,generator = "test2_seq")
-    private Integer id;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE,generator = "saved_line_seq")
+    @Column(name = "saved_line_id")
+    private Integer savedLineId;
 
     @Column(nullable = false)
     private Integer seriesId;

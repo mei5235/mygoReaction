@@ -1,6 +1,6 @@
 package com.example.mygoReaction.constant;
 
-public interface Test2Constant {
+public interface SavedLineConstant {
     // path
     String assetRootPath = "./asset/";
     String resourceRootPath = "./mygoReaction/src/main/resources/static/";

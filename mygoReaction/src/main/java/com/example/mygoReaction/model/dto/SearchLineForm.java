@@ -7,9 +7,11 @@ import java.time.Instant;
 
 @Getter
 @Setter
-public class hehe {
-    String series_name;
+public class SearchLineForm {
+    Integer seriesId;
+    String seriesName;
     Integer season;
     Integer episode;
     Instant startTime;
+    String line;
 }

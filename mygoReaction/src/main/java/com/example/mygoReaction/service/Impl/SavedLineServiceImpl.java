@@ -2,12 +2,13 @@ package com.example.mygoReaction.service.Impl;
 
 
 import com.example.mygoReaction.entity.SavedSeriesEntity;
-import com.example.mygoReaction.entity.Test2Entity;
-import com.example.mygoReaction.model.dto.SavedSeriesDto;
+import com.example.mygoReaction.entity.SavedLineEntity;
 import com.example.mygoReaction.model.dto.Test2Dto;
-import com.example.mygoReaction.model.dto.hehe;
+import com.example.mygoReaction.model.dto.SearchLineForm;
+import com.example.mygoReaction.model.form.GenericForm;
+import com.example.mygoReaction.model.form.GetSavedLineForm;
 import com.example.mygoReaction.repository.SavedSeriesRepository;
-import com.example.mygoReaction.repository.Test2Repository;
+import com.example.mygoReaction.repository.SavedLineRepository;
 import com.example.mygoReaction.service.SubtitleExtractService;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
@@ -30,76 +31,107 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 
 import static utils.FilenameUtils.removeFileExtension;
-import com.example.mygoReaction.constant.Test2Constant;
+
+import com.example.mygoReaction.constant.SavedLineConstant;
 
 @Slf4j
 @Service
-public class Test2ServiceImpl {
+public class SavedLineServiceImpl {
     @Autowired
     ResourceLoader resourceLoader;
 
     SubtitleExtractService subtitleExtractService;
 
-    private final Test2Repository test2Repository;
+    private final SavedLineRepository savedLineRepository;
     private final SavedSeriesRepository savedSeriesRepository;
-    public Test2ServiceImpl(
-            Test2Repository test2Repository,
+
+    public SavedLineServiceImpl(
+            SavedLineRepository savedLineRepository,
             SavedSeriesRepository savedSeriesRepository,
             @Qualifier("SrtSubtitleExtractServiceImpl") SubtitleExtractService subtitleExtractService
     ) {
-        this.test2Repository = test2Repository;
+        this.savedLineRepository = savedLineRepository;
         this.savedSeriesRepository = savedSeriesRepository;
         this.subtitleExtractService = subtitleExtractService;
     }
 
-    public ResponseEntity<String> findBySeriesIdAndKeyword(Test2Dto t2d){
-        List<Test2Entity> resp = test2Repository.findBySeriesIdAndLineContaining(t2d.getSeries_id(), t2d.getLine());
-        return ResponseEntity.ok().body(resp.stream().map(test2Entity -> "Id: " + test2Entity.getId() +
-                " seriesId: " + test2Entity.getSeriesId() +
-                " line: " + test2Entity.getLine()).toList().toString());
+    public ResponseEntity<String> findBySeriesIdAndKeyword(Test2Dto t2d) {
+        List<SavedLineEntity> resp = savedLineRepository.findBySeriesIdAndLineContaining(t2d.getSeries_id(), t2d.getLine());
+        return ResponseEntity.ok().body(resp.stream()
+                .map(savedLineEntity -> "Id: " + savedLineEntity.getSavedLineId() + " seriesId: " + savedLineEntity.getSeriesId() + " line: " + savedLineEntity.getLine())
+                .toList().toString());
     }
 
-//    public List<Test2Entity> findByDateBetween(String startDateStr, String endDateStr){
-//        Instant startDate = Instant.parse("1970-01-01T"+startDateStr+"+08:00");
-//        Instant endDate = Instant.parse("1970-01-01T"+endDateStr+"+08:00");
-//        List<Test2Entity> resp = test2Repository.findByTimeStamp(startDate,endDate);
-//        return resp;
-////        return null;
-//    }
 
-    public void hehe(){
-        // todo retrieve savedSeriesEntity from controller
+    /*
+    get the list of record in saved_line by either line or timestamp
+     */
+    public GenericForm getSavedLine(SearchLineForm searchLineForm) {
+        boolean isSearchByLine = false, isSearchByTimestamp = false;
 
-        // todo retrieve test2Entity from controller
+        if (
+                searchLineForm.getSeason() == null
+                        || searchLineForm.getSeriesName()==null
+                        || searchLineForm.getEpisode() == null
+                        || searchLineForm.getSeriesName().isBlank()
+        ) {
+            log.error("Missing augments. Insufficient info for finding anime series.");
+            return new GenericForm(1,"Missing augments. Insufficient info for finding anime series.");
+        }
 
-        // todo prepare hehe from info above
-        hehe hehe = new hehe();
-        hehe.setSeries_name("BanG Dream! It's MyGO!!!!!");
-        hehe.setSeason(1);
-        hehe.setEpisode(1);
-        hehe.setStartTime(Instant.parse("1970-01-01T00:02:32.319+08:00"));
+        Optional<SavedSeriesEntity> savedSeriesResp = savedSeriesRepository.findBySeriesNameAndSeasonAndEpisode(
+                searchLineForm.getSeriesName(),
+                searchLineForm.getSeason(),
+                searchLineForm.getEpisode()
+        );
 
-        getScreenCapFromVideo(hehe);
+        if (savedSeriesResp.isEmpty()) {
+            log.error("No Record found.");
+            return new GenericForm(1,"No Record found.");
+        }
+
+        if (!(searchLineForm.getLine()==null||searchLineForm.getLine().isBlank())) isSearchByLine = true;
+        if (!(searchLineForm.getStartTime() == null)) isSearchByTimestamp = true;
+        if (!isSearchByLine && !isSearchByTimestamp) {
+            log.error("Missing augments. Cannot determine searching criteria since both line and timestamp is empty.");
+            return new GenericForm(1,"Missing augments. Cannot determine searching criteria since both line and timestamp is empty.");
+        }
+        List<SavedLineEntity> savedLineEntityResp = null;
+        if (isSearchByLine) {
+            savedLineEntityResp = savedLineRepository.findBySeriesIdAndLineContaining(savedSeriesResp.get()
+                    .getSeriesId(), searchLineForm.getLine());
+        }
+        if (isSearchByTimestamp) {
+            savedLineEntityResp = savedLineRepository.findBySeriesIdAndTimestamp(savedSeriesResp.get()
+                    .getSeriesId(), searchLineForm.getStartTime());
+        }
+        if (savedLineEntityResp.isEmpty()) {
+            log.error("No Record found.");
+            return new GenericForm(1,"No Record found.");
+        }
+
+        return new GetSavedLineForm(0, "success", savedLineEntityResp);
     }
 
-    public void getScreenCapFromVideo(hehe t2d){
+    private void getScreenCapFromVideo(SearchLineForm t2d) {
 //        String videoFilename = "sample.mp4";
-        String videoFilename = t2d.getSeries_name() + "-S" + String.format("%02d",t2d.getSeason()) + "-E" + String.format("%02d",t2d.getEpisode())+".mkv";
+        String videoFilename = t2d.getSeriesName() + "-S" + String.format("%02d", t2d.getSeason()) + "-E" + String.format("%02d", t2d.getEpisode()) + ".mkv";
 
         File videoFile = null;
         try {
-            videoFile = new File(Test2Constant.assetRootPath +Test2Constant.videoFolderName+t2d.getSeries_name()+"/"+videoFilename);
+            videoFile = new File(SavedLineConstant.assetRootPath + SavedLineConstant.videoFolderName + t2d.getSeriesName() + "/" + videoFilename);
         } catch (Exception e) {
-            log.error(e.getMessage(),e);
+            log.error(e.getMessage(), e);
             throw new RuntimeException(e);
         }
 
-        try(
+        try (
                 FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoFile);
                 Java2DFrameConverter converter = new Java2DFrameConverter();
-        ){
+        ) {
             grabber.start();
             // get max timestamp of the video
             long timeLength = grabber.getLengthInTime();
@@ -121,7 +153,7 @@ public class Test2ServiceImpl {
                 BufferedImage bufferedImage = converter.getBufferedImage(frame);
                 String outputFilename = FilenameUtils.getUniqueOutputFilename("out.png");
 //                String outputFilename = FilenameUtils.getUniqueOutputFilename(t2d.getSeries_name() + "-S" + String.format("%02d",t2d.getSeason()) + "-E" + String.format("%02d",t2d.getEpisode())+t2d.getStartTime().toString()+".png");
-                ImageIO.write(bufferedImage, "png", new File(Test2Constant.resourceRootPath +Test2Constant.screenCapOutputFolderName+ outputFilename));
+                ImageIO.write(bufferedImage, "png", new File(SavedLineConstant.resourceRootPath + SavedLineConstant.screenCapOutputFolderName + outputFilename));
                 log.info("Frame extracted and saved as " + outputFilename);
             } else {
                 log.error("No frame found at the specified timestamp.");
@@ -135,14 +167,14 @@ public class Test2ServiceImpl {
     }
 
     @Transactional
-    public ResponseEntity<String> importFromSubtitle(String subtitleFilename){
+    public ResponseEntity<String> importFromSubtitle(String subtitleFilename) {
         File subtitleFile = null;
 
         try {
-            subtitleFile = new File(Test2Constant.assetRootPath +Test2Constant.subtitleFolderName+subtitleFilename);
+            subtitleFile = new File(SavedLineConstant.assetRootPath + SavedLineConstant.subtitleFolderName + subtitleFilename);
         } catch (NullPointerException e) {
             return new ResponseEntity<>(
-                    Test2Constant.subtitleFileNotFound,
+                    SavedLineConstant.subtitleFileNotFound,
                     HttpStatusCode.valueOf(500)
             );
         }
@@ -150,10 +182,10 @@ public class Test2ServiceImpl {
         // information array from subtitle filename
         // 0: series_name, 1: season, 2: episode
         String[] arr = removeFileExtension(subtitleFilename).split("-");
-        if(arr.length<3) {
+        if (arr.length < 3) {
             return ResponseEntity
                     .badRequest()
-                    .body(Test2Constant.inappropriateSubtitleFileFormat);
+                    .body(SavedLineConstant.inappropriateSubtitleFileFormat);
         }
 
         // record the series info in the save_series table
@@ -161,7 +193,7 @@ public class Test2ServiceImpl {
         sseb.seriesName(arr[0])
                 .season(Integer.parseInt(arr[1].substring(1)))
                 .episode(Integer.parseInt(arr[2].substring(1)))
-                .created_by(Test2Constant.createdBy);
+                .created_by(SavedLineConstant.createdBy);
         SavedSeriesEntity savedSeriesResp = null;
         try {
             savedSeriesResp = savedSeriesRepository.save(sseb.build());
@@ -173,7 +205,7 @@ public class Test2ServiceImpl {
 
         // process the subtitle and record in test2 table
         try {
-            subtitleExtractService.insertSubtitleIntoDB(subtitleFile,savedSeriesResp.getSeriesId());
+            subtitleExtractService.insertSubtitleIntoDB(subtitleFile, savedSeriesResp.getSeriesId());
         } catch (IOException e) {
             return new ResponseEntity<>(
                     "Error occurred when importing subtitles into DB.",

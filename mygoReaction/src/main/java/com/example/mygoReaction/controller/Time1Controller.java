@@ -1,7 +1,7 @@
 package com.example.mygoReaction.controller;
 
 import com.example.mygoReaction.entity.Time1Entity;
-import com.example.mygoReaction.constant.Test2Constant;
+import com.example.mygoReaction.constant.SavedLineConstant;
 import com.example.mygoReaction.repository.Time1Repository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +46,7 @@ public class Time1Controller {
     @RequestMapping(method = RequestMethod.GET, value="saveOne")
     public String hehehehe(@RequestParam("time") String time){
         Time1Entity. Time1EntityBuilder t1b =  Time1Entity.builder();
-        t1b.created_by(Test2Constant.createdBy)
+        t1b.created_by(SavedLineConstant.createdBy)
                 .timestamp1(Instant.parse("1970-01-01T"+time+"Z"))
         ;
         try {
