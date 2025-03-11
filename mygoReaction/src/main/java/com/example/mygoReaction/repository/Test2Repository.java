@@ -15,5 +15,7 @@ public interface Test2Repository extends JpaRepository<Test2Entity,String> {
 
     @Query("Select t2e from Test2Entity t2e where startTime >= :startTime and endTime <= :endTime ORDER BY createdTimestamp")
     List<Test2Entity> findByTimeStamp(Instant startTime, Instant endTime);
+
+    List<Test2Entity> findBySeriesIdAndLineContaining(Integer seriesId, String keyword);
 }
 

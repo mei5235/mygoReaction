@@ -3,6 +3,9 @@ package com.example.mygoReaction.service.Impl;
 
 import com.example.mygoReaction.entity.SavedSeriesEntity;
 import com.example.mygoReaction.entity.Test2Entity;
+import com.example.mygoReaction.model.dto.SavedSeriesDto;
+import com.example.mygoReaction.model.dto.Test2Dto;
+import com.example.mygoReaction.model.dto.hehe;
 import com.example.mygoReaction.repository.SavedSeriesRepository;
 import com.example.mygoReaction.repository.Test2Repository;
 import com.example.mygoReaction.service.SubtitleExtractService;
@@ -16,23 +19,20 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import utils.FilenameUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static utils.FilenameUtils.removeFileExtension;
+import com.example.mygoReaction.constant.Test2Constant;
 
 @Slf4j
 @Service
@@ -54,27 +54,50 @@ public class Test2ServiceImpl {
         this.subtitleExtractService = subtitleExtractService;
     }
 
-    public List<Test2Entity> findByDateBetween(String startDateStr, String endDateStr){
-        Instant startDate = Instant.parse("1970-01-01T"+startDateStr+"+08:00");
-        Instant endDate = Instant.parse("1970-01-01T"+endDateStr+"+08:00");
-        List<Test2Entity> resp = test2Repository.findByTimeStamp(startDate,endDate);
-        return resp;
-//        return null;
+    public ResponseEntity<String> findBySeriesIdAndKeyword(Test2Dto t2d){
+        List<Test2Entity> resp = test2Repository.findBySeriesIdAndLineContaining(t2d.getSeries_id(), t2d.getLine());
+        return ResponseEntity.ok().body(resp.stream().map(test2Entity -> "Id: " + test2Entity.getId() +
+                " seriesId: " + test2Entity.getSeriesId() +
+                " line: " + test2Entity.getLine()).toList().toString());
     }
 
-    public void getScreenCapFromVideoByTimestamp(){
-        String path = "./asset/video/SampleVideo_1280x720_30mb.mp4";
+//    public List<Test2Entity> findByDateBetween(String startDateStr, String endDateStr){
+//        Instant startDate = Instant.parse("1970-01-01T"+startDateStr+"+08:00");
+//        Instant endDate = Instant.parse("1970-01-01T"+endDateStr+"+08:00");
+//        List<Test2Entity> resp = test2Repository.findByTimeStamp(startDate,endDate);
+//        return resp;
+////        return null;
+//    }
 
-        File testVideoFile = null;
+    public void hehe(){
+        // todo retrieve savedSeriesEntity from controller
+
+        // todo retrieve test2Entity from controller
+
+        // todo prepare hehe from info above
+        hehe hehe = new hehe();
+        hehe.setSeries_name("BanG Dream! It's MyGO!!!!!");
+        hehe.setSeason(1);
+        hehe.setEpisode(1);
+        hehe.setStartTime(Instant.parse("1970-01-01T00:02:32.319+08:00"));
+
+        getScreenCapFromVideo(hehe);
+    }
+
+    public void getScreenCapFromVideo(hehe t2d){
+//        String videoFilename = "sample.mp4";
+        String videoFilename = t2d.getSeries_name() + "-S" + String.format("%02d",t2d.getSeason()) + "-E" + String.format("%02d",t2d.getEpisode())+".mkv";
+
+        File videoFile = null;
         try {
-            testVideoFile = new File(path);
+            videoFile = new File(Test2Constant.assetRootPath +Test2Constant.videoFolderName+t2d.getSeries_name()+"/"+videoFilename);
         } catch (Exception e) {
             log.error(e.getMessage(),e);
             throw new RuntimeException(e);
         }
 
         try(
-                FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(testVideoFile);
+                FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoFile);
                 Java2DFrameConverter converter = new Java2DFrameConverter();
         ){
             grabber.start();
@@ -87,9 +110,9 @@ public class Test2ServiceImpl {
 
 //            int second = 60;
             Instant he = Instant.parse("1970-01-01T00:00:00.000+08:00");
-            Instant startTimestamp = Instant.parse("1970-01-01T00:01:00.123+08:00");
-//            long second = startTimestamp.getEpochSecond();
-            long second = he.until(startTimestamp, ChronoUnit.SECONDS);
+//            Instant startTimestamp = Instant.parse("1970-01-01T00:01:00.123+08:00");
+//            long second = he.until(startTimestamp, ChronoUnit.SECONDS);
+            long second = he.until(t2d.getStartTime(), ChronoUnit.SECONDS);
             long timestamp = startTime + second * 1000000L; // 1 minute and 123 milliseconds
 
             grabber.setTimestamp(timestamp);
@@ -97,7 +120,8 @@ public class Test2ServiceImpl {
             if (frame != null) {
                 BufferedImage bufferedImage = converter.getBufferedImage(frame);
                 String outputFilename = FilenameUtils.getUniqueOutputFilename("out.png");
-                ImageIO.write(bufferedImage, "png", new File("./asset/screen_cap/"+ outputFilename));
+//                String outputFilename = FilenameUtils.getUniqueOutputFilename(t2d.getSeries_name() + "-S" + String.format("%02d",t2d.getSeason()) + "-E" + String.format("%02d",t2d.getEpisode())+t2d.getStartTime().toString()+".png");
+                ImageIO.write(bufferedImage, "png", new File(Test2Constant.resourceRootPath +Test2Constant.screenCapOutputFolderName+ outputFilename));
                 log.info("Frame extracted and saved as " + outputFilename);
             } else {
                 log.error("No frame found at the specified timestamp.");
@@ -112,14 +136,13 @@ public class Test2ServiceImpl {
 
     @Transactional
     public ResponseEntity<String> importFromSubtitle(String subtitleFilename){
-        String pathFromResource = "./asset/subtitle/";
         File subtitleFile = null;
 
         try {
-            subtitleFile = new File(pathFromResource+subtitleFilename);
+            subtitleFile = new File(Test2Constant.assetRootPath +Test2Constant.subtitleFolderName+subtitleFilename);
         } catch (NullPointerException e) {
             return new ResponseEntity<>(
-                    "Specified subtitle file not found",
+                    Test2Constant.subtitleFileNotFound,
                     HttpStatusCode.valueOf(500)
             );
         }
@@ -130,15 +153,15 @@ public class Test2ServiceImpl {
         if(arr.length<3) {
             return ResponseEntity
                     .badRequest()
-                    .body("Inappropriate subtitle filename.");
+                    .body(Test2Constant.inappropriateSubtitleFileFormat);
         }
 
         // record the series info in the save_series table
         SavedSeriesEntity.Builder sseb = SavedSeriesEntity.builder();
-        sseb.series_name(arr[0])
+        sseb.seriesName(arr[0])
                 .season(Integer.parseInt(arr[1].substring(1)))
                 .episode(Integer.parseInt(arr[2].substring(1)))
-                .created_by("Spring Boot");
+                .created_by(Test2Constant.createdBy);
         SavedSeriesEntity savedSeriesResp = null;
         try {
             savedSeriesResp = savedSeriesRepository.save(sseb.build());
@@ -161,38 +184,38 @@ public class Test2ServiceImpl {
         return ResponseEntity.ok().body("Success");
     }
 
-    public ResponseEntity<String> hehehehe(String filename){
-        String pathFromResource = "image/";
-        File imageTestFile = null;
-        BufferedReader bfr = null;
-
-        try {
-            imageTestFile = resourceLoader
-                    .getResource("classpath:"+pathFromResource+filename)
-                    .getFile();
-            byte[] content = null;
-            try {
-                content = Files.readAllBytes(imageTestFile.toPath());
-            } catch (final IOException e) {
-            }
-            MultipartFile result = new MockMultipartFile(filename,
-                    filename, "image/jpeg", content);
-
-            Test2Entity record = test2Repository.findById(1).get();
-            test2Repository.save(
-                    record.toBuilder()
-                            .screen_cap_thumbnail(result.getBytes())
-                            .screen_cap_path(imageTestFile.toPath().toString())
-                            .updated_by("update spring")
-                            .build()
-            );
-
-        } catch (IOException e) {
-            return new ResponseEntity<>(
-                    "Specified subtitle file not found",
-                    HttpStatusCode.valueOf(500)
-            );
-        }
-        return ResponseEntity.ok("Success");
-    }
+//    public ResponseEntity<String> saveImage2DB(String filename){
+//        String pathFromResource = "image/";
+//        File imageTestFile = null;
+//        BufferedReader bfr = null;
+//
+//        try {
+//            imageTestFile = resourceLoader
+//                    .getResource("classpath:"+pathFromResource+filename)
+//                    .getFile();
+//            byte[] content = null;
+//            try {
+//                content = Files.readAllBytes(imageTestFile.toPath());
+//            } catch (final IOException e) {
+//            }
+//            MultipartFile result = new MockMultipartFile(filename,
+//                    filename, "image/jpeg", content);
+//
+//            Test2Entity record = test2Repository.findById(1).get();
+//            test2Repository.save(
+//                    record.toBuilder()
+//                            .screen_cap_thumbnail(result.getBytes())
+//                            .screen_cap_path(imageTestFile.toPath().toString())
+//                            .updated_by("update spring")
+//                            .build()
+//            );
+//
+//        } catch (IOException e) {
+//            return new ResponseEntity<>(
+//                    "Specified subtitle file not found",
+//                    HttpStatusCode.valueOf(500)
+//            );
+//        }
+//        return ResponseEntity.ok("Success");
+//    }
 }

@@ -1,13 +1,11 @@
 package com.example.mygoReaction.service.Impl;
 
-import com.example.mygoReaction.entity.SavedSeriesEntity;
 import com.example.mygoReaction.entity.Test2Entity;
+import com.example.mygoReaction.constant.Test2Constant;
 import com.example.mygoReaction.repository.Test2Repository;
 import com.example.mygoReaction.service.SubtitleExtractService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -55,8 +53,8 @@ public class AssSubtitleExtractServiceImpl implements SubtitleExtractService {
                         .startTime(Instant.parse("1970-01-01T0"+subArr[1]+"+08:00")) //TODO padding the hour to 2 digit with 0
                         .endTime(Instant.parse("1970-01-01T0"+subArr[2]+"+08:00")) //TODO padding the hour to 2 digit with 0
                         .line(subArr[9])
-                        .created_by("Spring Boot")
-                        .updated_by("Spring Boot");
+                        .created_by(Test2Constant.createdBy)
+                        .updated_by(Test2Constant.createdBy);
                 test2Repository.save(t2e.build());
             }
             log.info("done import");

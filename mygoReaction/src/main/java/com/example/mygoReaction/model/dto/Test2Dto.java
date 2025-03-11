@@ -1,4 +1,4 @@
-package com.example.mygoReaction.model;
+package com.example.mygoReaction.model.dto;
 
 import lombok.Getter;
 import lombok.Setter;

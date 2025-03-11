@@ -20,14 +20,18 @@ public class SavedSeriesEntity {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "saved_series_seq")
     private Integer seriesId;
 
-    private String series_name;
+    @Column(name = "series_name", nullable = false)
+    private String seriesName;
 
+    @Column(nullable = false)
     private Integer season;
 
+    @Column(nullable = false)
     private Integer episode;
 
     private String created_by;
 
     @CreationTimestamp
+    @Column(nullable = false)
     private java.time.Instant created_timestamp;
 }

@@ -19,19 +19,20 @@ public class Test2Entity {
     @GeneratedValue(strategy = GenerationType.SEQUENCE,generator = "test2_seq")
     private Integer id;
 
+    @Column(nullable = false)
     private Integer seriesId;
 
-    @Column(name="start_time")
+    @Column(name="start_time", nullable = false)
     private java.time.Instant startTime;
 
-    @Column(name="end_time")
+    @Column(name="end_time",nullable = false)
     private java.time.Instant endTime;
 
+    @Column(nullable = false)
     private String line;
 
-    private String screen_cap_path;
-
-    private byte[] screen_cap_thumbnail;
+    @Column(name = "screen_cap_path")
+    private String screenCapPath;
 
     private String created_by;
 
