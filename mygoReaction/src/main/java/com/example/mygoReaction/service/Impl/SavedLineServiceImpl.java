@@ -7,6 +7,7 @@ import com.example.mygoReaction.model.dto.Test2Dto;
 import com.example.mygoReaction.model.dto.SearchLineForm;
 import com.example.mygoReaction.model.form.GenericForm;
 import com.example.mygoReaction.model.form.GetSavedLineForm;
+import com.example.mygoReaction.model.form.HeheForm;
 import com.example.mygoReaction.repository.SavedSeriesRepository;
 import com.example.mygoReaction.repository.SavedLineRepository;
 import com.example.mygoReaction.service.SubtitleExtractService;
@@ -35,7 +36,7 @@ import java.util.Optional;
 
 import static utils.FilenameUtils.removeFileExtension;
 
-import com.example.mygoReaction.constant.SavedLineConstant;
+import com.example.mygoReaction.constant.Constant;
 
 @Slf4j
 @Service
@@ -116,65 +117,82 @@ public class SavedLineServiceImpl {
         return new GetSavedLineForm(0, "success", savedLineEntityResp);
     }
 
-    private void getScreenCapFromVideo(SearchLineForm t2d) {
-//        String videoFilename = "sample.mp4";
-        String videoFilename = t2d.getSeriesName() + "-S" + String.format("%02d", t2d.getSeason()) + "-E" + String.format("%02d", t2d.getEpisode()) + ".mkv";
+    //todo test this shit
+    public GenericForm getScreenCapFromVideo(Integer savedLineid) {
+        SavedLineEntity findSavedLineResp = savedLineRepository.findBySavedLineId(savedLineid).orElse(null);
 
-        File videoFile = null;
-        try {
-            videoFile = new File(SavedLineConstant.assetRootPath + SavedLineConstant.videoFolderName + t2d.getSeriesName() + "/" + videoFilename);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            throw new RuntimeException(e);
+        if (findSavedLineResp == null) {
+            log.error("Record not found.");
+            return new GenericForm(1,"Record not found.");
         }
 
-        try (
-                FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoFile);
-                Java2DFrameConverter converter = new Java2DFrameConverter();
-        ) {
-            grabber.start();
-            // get max timestamp of the video
-            long timeLength = grabber.getLengthInTime();
+        SavedSeriesEntity findSavedSeriesResp = savedSeriesRepository.findBySeriesId(findSavedLineResp.getSeriesId()).orElse(null);
 
-            // get initial timestamp
-            Frame frame = grabber.grabImage();
-            long startTime = frame.timestamp;
+        // todo check line presented in findSavedLineResp. if not, save the screenshot as png and write the relative path to saved_line
+        if(findSavedLineResp.getLine() == null ||findSavedLineResp.getLine().isEmpty()){
+            String videoFilename = findSavedSeriesResp.getSeriesName() + "-S" + String.format("%02d", findSavedSeriesResp.getSeason()) + "-E" + String.format("%02d", findSavedSeriesResp.getEpisode()) + "." + Constant.extension;
+
+            File videoFile = null;
+            try {
+                videoFile = new File(Constant.resourceRootPath + Constant.videoFolderName + findSavedSeriesResp.getSeriesName() + "/" + videoFilename);
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+                throw new RuntimeException(e);
+            }
+
+            try (
+                    FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoFile);
+                    Java2DFrameConverter converter = new Java2DFrameConverter();
+            ) {
+                grabber.start();
+                // get max timestamp of the video
+                long timeLength = grabber.getLengthInTime();
+
+                // get initial timestamp
+                Frame frame = grabber.grabImage();
+                long startTime = frame.timestamp;
 
 //            int second = 60;
-            Instant he = Instant.parse("1970-01-01T00:00:00.000+08:00");
+                Instant he = Instant.parse("1970-01-01T00:00:00.000+08:00");
 //            Instant startTimestamp = Instant.parse("1970-01-01T00:01:00.123+08:00");
 //            long second = he.until(startTimestamp, ChronoUnit.SECONDS);
-            long second = he.until(t2d.getStartTime(), ChronoUnit.SECONDS);
-            long timestamp = startTime + second * 1000000L; // 1 minute and 123 milliseconds
+                long second = he.until(findSavedLineResp.getStartTime(), ChronoUnit.SECONDS);
+                long timestamp = startTime + second * 1000000L; // 1 minute and 123 milliseconds
 
-            grabber.setTimestamp(timestamp);
-            frame = grabber.grabImage();
-            if (frame != null) {
-                BufferedImage bufferedImage = converter.getBufferedImage(frame);
-                String outputFilename = FilenameUtils.getUniqueOutputFilename("out.png");
+                grabber.setTimestamp(timestamp);
+                frame = grabber.grabImage();
+                if (frame != null) {
+                    BufferedImage bufferedImage = converter.getBufferedImage(frame);
+                    String outputFilename = FilenameUtils.getUniqueOutputFilename("out.png");
 //                String outputFilename = FilenameUtils.getUniqueOutputFilename(t2d.getSeries_name() + "-S" + String.format("%02d",t2d.getSeason()) + "-E" + String.format("%02d",t2d.getEpisode())+t2d.getStartTime().toString()+".png");
-                ImageIO.write(bufferedImage, "png", new File(SavedLineConstant.resourceRootPath + SavedLineConstant.screenCapOutputFolderName + outputFilename));
-                log.info("Frame extracted and saved as " + outputFilename);
-            } else {
-                log.error("No frame found at the specified timestamp.");
+                    ImageIO.write(bufferedImage, "png", new File(Constant.resourceRootPath + Constant.screenCapOutputFolderName + outputFilename));
+                    log.info("Frame extracted and saved as " + outputFilename);
+                } else {
+                    log.error("No frame found at the specified timestamp.");
+                }
+                grabber.stop();
+            } catch (FrameGrabber.Exception e) {
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
-            grabber.stop();
-        } catch (FrameGrabber.Exception e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        }else{
+            // todo get path in findtable and return
         }
+
+        return new HeheForm(0,"success");
     }
 
+    // todo test this shit
     @Transactional
     public ResponseEntity<String> importFromSubtitle(String subtitleFilename) {
         File subtitleFile = null;
 
         try {
-            subtitleFile = new File(SavedLineConstant.assetRootPath + SavedLineConstant.subtitleFolderName + subtitleFilename);
+            subtitleFile = new File(Constant.resourceRootPath + Constant.subtitleFolderName + subtitleFilename);
         } catch (NullPointerException e) {
             return new ResponseEntity<>(
-                    SavedLineConstant.subtitleFileNotFound,
+                    Constant.subtitleFileNotFound,
                     HttpStatusCode.valueOf(500)
             );
         }
@@ -185,7 +203,7 @@ public class SavedLineServiceImpl {
         if (arr.length < 3) {
             return ResponseEntity
                     .badRequest()
-                    .body(SavedLineConstant.inappropriateSubtitleFileFormat);
+                    .body(Constant.inappropriateSubtitleFileFormat);
         }
 
         // record the series info in the save_series table
@@ -193,7 +211,7 @@ public class SavedLineServiceImpl {
         sseb.seriesName(arr[0])
                 .season(Integer.parseInt(arr[1].substring(1)))
                 .episode(Integer.parseInt(arr[2].substring(1)))
-                .created_by(SavedLineConstant.createdBy);
+                .created_by(Constant.createdBy);
         SavedSeriesEntity savedSeriesResp = null;
         try {
             savedSeriesResp = savedSeriesRepository.save(sseb.build());

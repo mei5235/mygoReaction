@@ -1,7 +1,7 @@
 package com.example.mygoReaction.service.Impl;
 
 import com.example.mygoReaction.entity.SavedLineEntity;
-import com.example.mygoReaction.constant.SavedLineConstant;
+import com.example.mygoReaction.constant.Constant;
 import com.example.mygoReaction.repository.SavedLineRepository;
 import com.example.mygoReaction.service.SubtitleExtractService;
 import lombok.extern.slf4j.Slf4j;
@@ -74,8 +74,8 @@ public class SrtSubtitleExtractServiceImpl implements SubtitleExtractService {
                     temp.append(" ").append(line);
                 }else {
                     t2e.line(temp.toString())
-                            .created_by(SavedLineConstant.createdBy)
-                            .updated_by(SavedLineConstant.createdBy);
+                            .created_by(Constant.createdBy)
+                            .updated_by(Constant.createdBy);
                     temp = new StringBuilder();
                     savedLineRepository.save(t2e.build());
                     t2e = null;

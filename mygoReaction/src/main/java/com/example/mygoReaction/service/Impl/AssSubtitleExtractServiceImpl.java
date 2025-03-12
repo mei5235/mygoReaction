@@ -1,7 +1,7 @@
 package com.example.mygoReaction.service.Impl;
 
 import com.example.mygoReaction.entity.SavedLineEntity;
-import com.example.mygoReaction.constant.SavedLineConstant;
+import com.example.mygoReaction.constant.Constant;
 import com.example.mygoReaction.repository.SavedLineRepository;
 import com.example.mygoReaction.service.SubtitleExtractService;
 import lombok.extern.slf4j.Slf4j;
@@ -53,8 +53,8 @@ public class AssSubtitleExtractServiceImpl implements SubtitleExtractService {
                         .startTime(Instant.parse("1970-01-01T0"+subArr[1]+"+08:00")) //TODO padding the hour to 2 digit with 0
                         .endTime(Instant.parse("1970-01-01T0"+subArr[2]+"+08:00")) //TODO padding the hour to 2 digit with 0
                         .line(subArr[9])
-                        .created_by(SavedLineConstant.createdBy)
-                        .updated_by(SavedLineConstant.createdBy);
+                        .created_by(Constant.createdBy)
+                        .updated_by(Constant.createdBy);
                 savedLineRepository.save(t2e.build());
             }
             log.info("done import");

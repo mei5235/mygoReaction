@@ -1,9 +1,8 @@
 package com.example.mygoReaction.constant;
 
-public interface SavedLineConstant {
+public interface Constant {
     // path
-    String assetRootPath = "./asset/";
-    String resourceRootPath = "./mygoReaction/src/main/resources/static/";
+    String resourceRootPath = "C:/Code/mygoReaction/asset";
     String videoFolderName = "video/";
     String screenCapOutputFolderName = "screen_cap/";
     String subtitleFolderName = "subtitle/";
@@ -14,4 +13,6 @@ public interface SavedLineConstant {
 
     // db related
     String createdBy = "Spting Boot";
+
+    String extension = "mkv";
 }

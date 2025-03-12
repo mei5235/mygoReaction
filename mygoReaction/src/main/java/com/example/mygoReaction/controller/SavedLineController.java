@@ -3,7 +3,7 @@ package com.example.mygoReaction.controller;
 import com.example.mygoReaction.model.dto.SearchLineForm;
 import com.example.mygoReaction.model.dto.Test2Dto;
 import com.example.mygoReaction.model.form.GenericForm;
-import com.example.mygoReaction.model.form.GetSavedLineForm;
+import com.example.mygoReaction.model.form.HeheForm;
 import com.example.mygoReaction.service.Impl.SavedLineServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,7 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("time2")
+@RequestMapping("line")
 public class SavedLineController {
 
     private static final Logger log = LoggerFactory.getLogger(SavedLineController.class);
@@ -41,6 +41,13 @@ public class SavedLineController {
         return ResponseEntity.ok(form);
     }
 
+    @RequestMapping(method = RequestMethod.POST, value = "getScreenCapFromVideo")
+    public ResponseEntity<GenericForm> getScreenCapFromVideo(Integer savedLineId){
+        // todo error handling
+        GenericForm hehe = savedLineServiceImpl.getScreenCapFromVideo(savedLineId);
+        return ResponseEntity.ok(hehe);
+    }
+
     @RequestMapping(method = RequestMethod.POST, value = "importFromSubtitle")
     public ResponseEntity<String> importFromSubtitle(@RequestBody String subtitleFileName){
         ResponseEntity<String> resp = null;
@@ -52,18 +59,5 @@ public class SavedLineController {
         }
         return resp;
     }
-
-//    @RequestMapping("/saveImage2DB")
-//    public ResponseEntity<String> saveImage2DB(@RequestParam("filename") String filename){
-//        ResponseEntity<String> resp = null;
-//        try {
-//            test2ServiceImpl.saveImage2DB(filename);
-//        } catch (Exception e) {
-//            log.error("error");
-//            log.error(e.getMessage(),e);
-//        }
-//        return resp;
-//    }
-
 
 }
