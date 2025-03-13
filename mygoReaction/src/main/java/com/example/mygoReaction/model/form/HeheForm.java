@@ -1,9 +1,14 @@
 package com.example.mygoReaction.model.form;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.net.URL;
 
+@Getter
+@Setter
 public class HeheForm extends GenericForm{
-    URL path;
+    String path;
 
     public HeheForm() {
     }
@@ -12,7 +17,7 @@ public class HeheForm extends GenericForm{
         super(code, message);
     }
 
-    public HeheForm(Integer code, String message, URL path) {
+    public HeheForm(Integer code, String message, String path) {
         super(code, message);
         this.path = path;
     }

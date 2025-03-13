@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import utils.FilenameUtils;
 
 import javax.imageio.ImageIO;
@@ -67,7 +68,7 @@ public class SavedLineServiceImpl {
     }
 
 
-    /*
+    /**
     get the list of record in saved_line by either line or timestamp
      */
     public GenericForm getSavedLine(SearchLineForm searchLineForm) {
@@ -119,6 +120,7 @@ public class SavedLineServiceImpl {
 
     //todo test this shit
     public GenericForm getScreenCapFromVideo(Integer savedLineid) {
+        HeheForm form = new HeheForm();
         SavedLineEntity findSavedLineResp = savedLineRepository.findBySavedLineId(savedLineid).orElse(null);
 
         if (findSavedLineResp == null) {
@@ -128,8 +130,8 @@ public class SavedLineServiceImpl {
 
         SavedSeriesEntity findSavedSeriesResp = savedSeriesRepository.findBySeriesId(findSavedLineResp.getSeriesId()).orElse(null);
 
-        // todo check line presented in findSavedLineResp. if not, save the screenshot as png and write the relative path to saved_line
-        if(findSavedLineResp.getLine() == null ||findSavedLineResp.getLine().isEmpty()){
+        // check line presented in findSavedLineResp. if not, save the screenshot as png and write the relative path to saved_line
+        if(findSavedLineResp.getScreenCapPath() == null ||findSavedLineResp.getScreenCapPath().isEmpty()){
             String videoFilename = findSavedSeriesResp.getSeriesName() + "-S" + String.format("%02d", findSavedSeriesResp.getSeason()) + "-E" + String.format("%02d", findSavedSeriesResp.getEpisode()) + "." + Constant.extension;
 
             File videoFile = null;
@@ -161,9 +163,12 @@ public class SavedLineServiceImpl {
 
                 grabber.setTimestamp(timestamp);
                 frame = grabber.grabImage();
+
+                String outputFilename = "";
+
                 if (frame != null) {
                     BufferedImage bufferedImage = converter.getBufferedImage(frame);
-                    String outputFilename = FilenameUtils.getUniqueOutputFilename("out.png");
+                    outputFilename = FilenameUtils.getUniqueOutputFilename("out.png");
 //                String outputFilename = FilenameUtils.getUniqueOutputFilename(t2d.getSeries_name() + "-S" + String.format("%02d",t2d.getSeason()) + "-E" + String.format("%02d",t2d.getEpisode())+t2d.getStartTime().toString()+".png");
                     ImageIO.write(bufferedImage, "png", new File(Constant.resourceRootPath + Constant.screenCapOutputFolderName + outputFilename));
                     log.info("Frame extracted and saved as " + outputFilename);
@@ -171,6 +176,8 @@ public class SavedLineServiceImpl {
                     log.error("No frame found at the specified timestamp.");
                 }
                 grabber.stop();
+                form.setPath(ServletUriComponentsBuilder.fromCurrentContextPath().path("/static/screen_cap/")
+                        .path(outputFilename).toUriString());
             } catch (FrameGrabber.Exception e) {
                 throw new RuntimeException(e);
             } catch (IOException e) {
@@ -179,8 +186,9 @@ public class SavedLineServiceImpl {
         }else{
             // todo get path in findtable and return
         }
-
-        return new HeheForm(0,"success");
+        form.setCode(0);
+        form.setMessage("success");
+        return form;
     }
 
     // todo test this shit

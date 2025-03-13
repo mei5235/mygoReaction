@@ -41,10 +41,15 @@ public class SavedLineController {
         return ResponseEntity.ok(form);
     }
 
-    @RequestMapping(method = RequestMethod.POST, value = "getScreenCapFromVideo")
-    public ResponseEntity<GenericForm> getScreenCapFromVideo(Integer savedLineId){
-        // todo error handling
-        GenericForm hehe = savedLineServiceImpl.getScreenCapFromVideo(savedLineId);
+    @RequestMapping(method = RequestMethod.GET, value = "getScreenCapFromVideo")
+    public ResponseEntity<GenericForm> getScreenCapFromVideo(@RequestParam Integer savedLineId){
+        GenericForm hehe = null;
+        try {
+             hehe = savedLineServiceImpl.getScreenCapFromVideo(savedLineId);
+        } catch (Exception e) {
+            log.error("error");
+            log.error(e.getMessage(),e);
+        }
         return ResponseEntity.ok(hehe);
     }
 

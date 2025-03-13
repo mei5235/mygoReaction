@@ -2,7 +2,7 @@ package com.example.mygoReaction.constant;
 
 public interface Constant {
     // path
-    String resourceRootPath = "C:/Code/mygoReaction/asset";
+    String resourceRootPath = "C:/Code/mygoReaction/asset/";
     String videoFolderName = "video/";
     String screenCapOutputFolderName = "screen_cap/";
     String subtitleFolderName = "subtitle/";
