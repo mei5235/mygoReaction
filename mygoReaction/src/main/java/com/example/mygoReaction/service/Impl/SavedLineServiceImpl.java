@@ -69,7 +69,9 @@ public class SavedLineServiceImpl {
 
 
     /**
-    get the list of record in saved_line by either line or timestamp
+     * get the list of records in saved_line by certain search criteria
+     * @param searchLineForm form object for storing the searching parameters
+     * @return GenericForm object which store the screen cap URL and other info
      */
     public GenericForm getSavedLine(SearchLineForm searchLineForm) {
         boolean isSearchByLine = false, isSearchByTimestamp = false;
@@ -130,13 +132,17 @@ public class SavedLineServiceImpl {
 
         SavedSeriesEntity findSavedSeriesResp = savedSeriesRepository.findBySeriesId(findSavedLineResp.getSeriesId()).orElse(null);
 
+        String videoFilename = findSavedSeriesResp.getSeriesName() + "-S" + String.format("%02d", findSavedSeriesResp.getSeason()) + "-E" + String.format("%02d", findSavedSeriesResp.getEpisode()) ;
+        String videoFilePath = Constant.RESOURCEROOTPATH + Constant.VIDEOFOLDERNAME + findSavedSeriesResp.getSeriesName() + "/" + videoFilename + "." + Constant.extension.MKV;
+        String outputFilename = FilenameUtils.getUniqueOutputFilename(videoFilename + "." + Constant.extension.PNG);
+        String outputFilePath = Constant.RESOURCEROOTPATH + Constant.SCREENCAPOUTPUTFOLDERNAME + outputFilename;
+
         // check line presented in findSavedLineResp. if not, save the screenshot as png and write the relative path to saved_line
         if(findSavedLineResp.getScreenCapPath() == null ||findSavedLineResp.getScreenCapPath().isEmpty()){
-            String videoFilename = findSavedSeriesResp.getSeriesName() + "-S" + String.format("%02d", findSavedSeriesResp.getSeason()) + "-E" + String.format("%02d", findSavedSeriesResp.getEpisode()) + "." + Constant.extension;
-
             File videoFile = null;
+
             try {
-                videoFile = new File(Constant.resourceRootPath + Constant.videoFolderName + findSavedSeriesResp.getSeriesName() + "/" + videoFilename);
+                videoFile = new File(videoFilePath);
             } catch (Exception e) {
                 log.error(e.getMessage(), e);
                 throw new RuntimeException(e);
@@ -164,27 +170,30 @@ public class SavedLineServiceImpl {
                 grabber.setTimestamp(timestamp);
                 frame = grabber.grabImage();
 
-                String outputFilename = "";
+//                String outputFilename = "";
 
                 if (frame != null) {
                     BufferedImage bufferedImage = converter.getBufferedImage(frame);
-                    outputFilename = FilenameUtils.getUniqueOutputFilename("out.png");
-//                String outputFilename = FilenameUtils.getUniqueOutputFilename(t2d.getSeries_name() + "-S" + String.format("%02d",t2d.getSeason()) + "-E" + String.format("%02d",t2d.getEpisode())+t2d.getStartTime().toString()+".png");
-                    ImageIO.write(bufferedImage, "png", new File(Constant.resourceRootPath + Constant.screenCapOutputFolderName + outputFilename));
+                    ImageIO.write(bufferedImage, "png", new File(outputFilePath));
                     log.info("Frame extracted and saved as " + outputFilename);
                 } else {
                     log.error("No frame found at the specified timestamp.");
                 }
                 grabber.stop();
-                form.setPath(ServletUriComponentsBuilder.fromCurrentContextPath().path("/static/screen_cap/")
-                        .path(outputFilename).toUriString());
+                String screenCapPath = ServletUriComponentsBuilder.fromCurrentContextPath().path("/static/screen_cap/")
+                        .path(outputFilename).toUriString();
+                form.setPath(screenCapPath);
+
+                SavedLineEntity.Builder test = findSavedLineResp.toBuilder().screenCapPath(outputFilePath);
+                savedLineRepository.save(test.build());
             } catch (FrameGrabber.Exception e) {
                 throw new RuntimeException(e);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }else{
-            // todo get path in findtable and return
+            // get path in DB directly and return
+            form.setPath(findSavedLineResp.getScreenCapPath());
         }
         form.setCode(0);
         form.setMessage("success");
@@ -197,10 +206,10 @@ public class SavedLineServiceImpl {
         File subtitleFile = null;
 
         try {
-            subtitleFile = new File(Constant.resourceRootPath + Constant.subtitleFolderName + subtitleFilename);
+            subtitleFile = new File(Constant.RESOURCEROOTPATH + Constant.SUBTITLEFOLDERNAME + subtitleFilename);
         } catch (NullPointerException e) {
             return new ResponseEntity<>(
-                    Constant.subtitleFileNotFound,
+                    Constant.SUBTITLEFILENOTFOUND,
                     HttpStatusCode.valueOf(500)
             );
         }
@@ -211,7 +220,7 @@ public class SavedLineServiceImpl {
         if (arr.length < 3) {
             return ResponseEntity
                     .badRequest()
-                    .body(Constant.inappropriateSubtitleFileFormat);
+                    .body(Constant.INAPPROPRIATESUBTITLEFILEFORMAT);
         }
 
         // record the series info in the save_series table
@@ -219,7 +228,7 @@ public class SavedLineServiceImpl {
         sseb.seriesName(arr[0])
                 .season(Integer.parseInt(arr[1].substring(1)))
                 .episode(Integer.parseInt(arr[2].substring(1)))
-                .created_by(Constant.createdBy);
+                .created_by(Constant.CREATEDBY);
         SavedSeriesEntity savedSeriesResp = null;
         try {
             savedSeriesResp = savedSeriesRepository.save(sseb.build());

@@ -15,6 +15,9 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 
+/**
+ * Class for extracting line in the .srt subtitle file into DB records
+ */
 @Slf4j
 @Service
 @Qualifier("SrtSubtitleExtractServiceImpl")
@@ -74,8 +77,8 @@ public class SrtSubtitleExtractServiceImpl implements SubtitleExtractService {
                     temp.append(" ").append(line);
                 }else {
                     t2e.line(temp.toString())
-                            .created_by(Constant.createdBy)
-                            .updated_by(Constant.createdBy);
+                            .created_by(Constant.CREATEDBY)
+                            .updated_by(Constant.CREATEDBY);
                     temp = new StringBuilder();
                     savedLineRepository.save(t2e.build());
                     t2e = null;
