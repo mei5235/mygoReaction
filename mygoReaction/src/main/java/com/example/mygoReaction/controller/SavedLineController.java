@@ -23,7 +23,7 @@ public class SavedLineController {
         this.savedLineServiceImpl = savedLineServiceImpl;
     }
 
-    @RequestMapping(method = RequestMethod.POST, value="/findBySeriesIdAndKeyword")
+    @RequestMapping(method = RequestMethod.POST, value="/findBySeriesIdAndKeyword",produces = "application/json;charset=UTF-8")
     public ResponseEntity<String> findBySeriesIdAndKeyword(@RequestBody Test2Dto t2d){
         return savedLineServiceImpl.findByKeyword(t2d);
     }

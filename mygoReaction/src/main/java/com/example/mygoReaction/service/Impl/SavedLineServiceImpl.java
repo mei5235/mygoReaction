@@ -61,7 +61,7 @@ public class SavedLineServiceImpl {
     }
 
     public ResponseEntity<String> findByKeyword(Test2Dto t2d) {
-        List<SavedLineEntity> resp = savedLineRepository.findByLineContaining(t2d.getLine());
+        List<SavedLineEntity> resp = savedLineRepository.findByLineContaining(t2d.getSeries_id(), t2d.getLine());
         return ResponseEntity.ok().body(resp.stream()
                 .map(savedLineEntity -> "Id: " + savedLineEntity.getSavedLineId() + " seriesId: " + savedLineEntity.getSeriesId() + " line: " + savedLineEntity.getLine())
                 .toList().toString());
@@ -83,9 +83,16 @@ public class SavedLineServiceImpl {
             return new GenericForm(1,"Missing augments. Cannot determine searching criteria since both line and timestamp is empty.");
         }
 
+        Optional<SavedSeriesEntity> savedSeriesResp = savedSeriesRepository.findBySeriesNameAndSeasonAndEpisode(
+                searchLineForm.getSeriesName(),
+                searchLineForm.getSeason(),
+                searchLineForm.getEpisode()
+        );
+
         List<SavedLineEntity> savedLineEntityResp = null;
         if (isSearchByLine) {
-            savedLineEntityResp = savedLineRepository.findByLineContaining(searchLineForm.getLine());
+            Integer id = savedSeriesResp.map(SavedSeriesEntity::getSeriesId).orElse(null);
+            savedLineEntityResp = savedLineRepository.findByLineContaining(id,searchLineForm.getLine());
         }
         if (isSearchByTimestamp) {
             if (
@@ -97,12 +104,6 @@ public class SavedLineServiceImpl {
                 log.error("Missing augments. Insufficient info for finding anime series.");
                 return new GenericForm(1,"Missing augments. Insufficient info for finding anime series.");
             }
-
-            Optional<SavedSeriesEntity> savedSeriesResp = savedSeriesRepository.findBySeriesNameAndSeasonAndEpisode(
-                    searchLineForm.getSeriesName(),
-                    searchLineForm.getSeason(),
-                    searchLineForm.getEpisode()
-            );
 
             if (savedSeriesResp.isEmpty()) {
                 log.error("No Record found.");
@@ -120,7 +121,6 @@ public class SavedLineServiceImpl {
         return new GetSavedLineForm(0, "success", savedLineEntityResp);
     }
 
-    //todo test this shit
     public GenericForm getScreenCapFromVideo(Integer savedLineid) {
         HeheForm form = new HeheForm();
         SavedLineEntity findSavedLineResp = savedLineRepository.findBySavedLineId(savedLineid).orElse(null);
@@ -200,7 +200,6 @@ public class SavedLineServiceImpl {
         return form;
     }
 
-    // todo test this shit
     @Transactional
     public ResponseEntity<String> importFromSubtitle(String subtitleFilename) {
         File subtitleFile = null;
