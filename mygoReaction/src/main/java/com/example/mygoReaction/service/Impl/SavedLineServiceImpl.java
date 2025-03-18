@@ -230,13 +230,8 @@ public class SavedLineServiceImpl {
                 .episode(Integer.parseInt(arr[2].substring(1)))
                 .created_by(Constant.CREATEDBY);
         SavedSeriesEntity savedSeriesResp = null;
-        try {
-            savedSeriesResp = savedSeriesRepository.save(sseb.build());
-        } catch (Exception e) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(e.getMessage());
-        }
+
+        savedSeriesResp = savedSeriesRepository.save(sseb.build());
 
         // process the subtitle and record in test2 table
         try {
