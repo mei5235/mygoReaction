@@ -16,7 +16,7 @@ public interface SavedLineRepository extends JpaRepository<SavedLineEntity,Strin
     @Query("Select sle from SavedLineEntity sle where startTime <= :selectedTime and endTime >= :selectedTime and seriesId = :seriesId ORDER BY createdTimestamp")
     List<SavedLineEntity> findBySeriesIdAndTimestamp(Integer seriesId, Instant selectedTime);
 
-    List<SavedLineEntity> findBySeriesIdAndLineContaining(Integer seriesId, String keyword);
+    List<SavedLineEntity> findByLineContaining(String keyword);
 
 
 }

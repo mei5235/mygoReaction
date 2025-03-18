@@ -60,8 +60,8 @@ public class SavedLineServiceImpl {
         this.subtitleExtractService = subtitleExtractService;
     }
 
-    public ResponseEntity<String> findBySeriesIdAndKeyword(Test2Dto t2d) {
-        List<SavedLineEntity> resp = savedLineRepository.findBySeriesIdAndLineContaining(t2d.getSeries_id(), t2d.getLine());
+    public ResponseEntity<String> findByKeyword(Test2Dto t2d) {
+        List<SavedLineEntity> resp = savedLineRepository.findByLineContaining(t2d.getLine());
         return ResponseEntity.ok().body(resp.stream()
                 .map(savedLineEntity -> "Id: " + savedLineEntity.getSavedLineId() + " seriesId: " + savedLineEntity.getSeriesId() + " line: " + savedLineEntity.getLine())
                 .toList().toString());
@@ -76,39 +76,39 @@ public class SavedLineServiceImpl {
     public GenericForm getSavedLine(SearchLineForm searchLineForm) {
         boolean isSearchByLine = false, isSearchByTimestamp = false;
 
-        if (
-                searchLineForm.getSeason() == null
-                        || searchLineForm.getSeriesName()==null
-                        || searchLineForm.getEpisode() == null
-                        || searchLineForm.getSeriesName().isBlank()
-        ) {
-            log.error("Missing augments. Insufficient info for finding anime series.");
-            return new GenericForm(1,"Missing augments. Insufficient info for finding anime series.");
-        }
-
-        Optional<SavedSeriesEntity> savedSeriesResp = savedSeriesRepository.findBySeriesNameAndSeasonAndEpisode(
-                searchLineForm.getSeriesName(),
-                searchLineForm.getSeason(),
-                searchLineForm.getEpisode()
-        );
-
-        if (savedSeriesResp.isEmpty()) {
-            log.error("No Record found.");
-            return new GenericForm(1,"No Record found.");
-        }
-
         if (!(searchLineForm.getLine()==null||searchLineForm.getLine().isBlank())) isSearchByLine = true;
         if (!(searchLineForm.getStartTime() == null)) isSearchByTimestamp = true;
         if (!isSearchByLine && !isSearchByTimestamp) {
             log.error("Missing augments. Cannot determine searching criteria since both line and timestamp is empty.");
             return new GenericForm(1,"Missing augments. Cannot determine searching criteria since both line and timestamp is empty.");
         }
+
         List<SavedLineEntity> savedLineEntityResp = null;
         if (isSearchByLine) {
-            savedLineEntityResp = savedLineRepository.findBySeriesIdAndLineContaining(savedSeriesResp.get()
-                    .getSeriesId(), searchLineForm.getLine());
+            savedLineEntityResp = savedLineRepository.findByLineContaining(searchLineForm.getLine());
         }
         if (isSearchByTimestamp) {
+            if (
+                    searchLineForm.getSeason() == null
+                            || searchLineForm.getSeriesName()==null
+                            || searchLineForm.getEpisode() == null
+                            || searchLineForm.getSeriesName().isBlank()
+            ) {
+                log.error("Missing augments. Insufficient info for finding anime series.");
+                return new GenericForm(1,"Missing augments. Insufficient info for finding anime series.");
+            }
+
+            Optional<SavedSeriesEntity> savedSeriesResp = savedSeriesRepository.findBySeriesNameAndSeasonAndEpisode(
+                    searchLineForm.getSeriesName(),
+                    searchLineForm.getSeason(),
+                    searchLineForm.getEpisode()
+            );
+
+            if (savedSeriesResp.isEmpty()) {
+                log.error("No Record found.");
+                return new GenericForm(1,"No Record found.");
+            }
+
             savedLineEntityResp = savedLineRepository.findBySeriesIdAndTimestamp(savedSeriesResp.get()
                     .getSeriesId(), searchLineForm.getStartTime());
         }

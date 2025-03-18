@@ -25,7 +25,7 @@ public class SavedLineController {
 
     @RequestMapping(method = RequestMethod.POST, value="/findBySeriesIdAndKeyword")
     public ResponseEntity<String> findBySeriesIdAndKeyword(@RequestBody Test2Dto t2d){
-        return savedLineServiceImpl.findBySeriesIdAndKeyword(t2d);
+        return savedLineServiceImpl.findByKeyword(t2d);
     }
 
     @RequestMapping(method = RequestMethod.POST, value="/getSavedLine")
