@@ -74,7 +74,11 @@ public class SrtSubtitleExtractServiceImpl implements SubtitleExtractService {
                     continue;
                 }
                 if(!(line.matches(patterns[2]))){
-                    temp.append(" ").append(line);
+                    if (temp==null || temp.toString().isEmpty()) {
+                        temp.append(line);
+                    }else{
+                        temp.append(System.lineSeparator()).append(line);
+                    }
                 }else {
                     t2e.line(temp.toString())
                             .created_by(Constant.CREATEDBY)
