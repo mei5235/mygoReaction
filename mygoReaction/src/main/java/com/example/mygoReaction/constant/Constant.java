@@ -7,10 +7,13 @@ public interface Constant {
     String SCREENCAPOUTPUTFOLDERNAME = "screen_cap/";
     String SUBTITLEFOLDERNAME = "subtitle/";
     
-    // error message
+    // message
     String SUBTITLEFILENOTFOUND = "Specified subtitle file not found.";
     String INAPPROPRIATESUBTITLEFILEFORMAT = "Inappropriate subtitle filename. Please rename the subtitle file with the following format:[series name]-[season]-[episode].[file extension]";
-
+    String INSUFFICIENTAUGMENTDETERMINDSEARCHMETHOD = "Missing augments. Cannot determine searching criteria since both line and timestamp is empty.";
+    String MISSINGSERIESINFO = "Missing augments. Insufficient info for finding anime series.";
+    String NORECORD = "No Record found.";
+    String SUCCESS = "Success.";
     // db related
     String CREATEDBY = "Spting Boot";
 

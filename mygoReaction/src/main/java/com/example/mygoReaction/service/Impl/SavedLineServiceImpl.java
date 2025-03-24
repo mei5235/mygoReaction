@@ -16,6 +16,8 @@ import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameGrabber;
 import org.bytedeco.javacv.Java2DFrameConverter;
+import org.bytedeco.opencv.opencv_core.IplImage;
+import org.bytedeco.opencv.opencv_imgproc.CvFont;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.ResourceLoader;
@@ -27,6 +29,11 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import utils.FilenameUtils;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.font.FontRenderContext;
+import java.awt.font.GlyphVector;
+import java.awt.font.TextLayout;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -60,27 +67,34 @@ public class SavedLineServiceImpl {
         this.subtitleExtractService = subtitleExtractService;
     }
 
-    public ResponseEntity<String> findByKeyword(Test2Dto t2d) {
+    /**
+     * List all saved_line record matching the searching criteria
+     * @param t2d data form object for searching the line
+     * @return response form object with the records which matching the criteria
+     */
+    public GenericForm findByKeyword(Test2Dto t2d) {
         List<SavedLineEntity> resp = savedLineRepository.findByLineContaining(t2d.getSeries_id(), t2d.getLine());
-        return ResponseEntity.ok().body(resp.stream()
-                .map(savedLineEntity -> "Id: " + savedLineEntity.getSavedLineId() + " seriesId: " + savedLineEntity.getSeriesId() + " line: " + savedLineEntity.getLine())
-                .toList().toString());
+        return new GetSavedLineForm(0, "success", resp);
     }
 
 
     /**
-     * get the list of records in saved_line by certain search criteria
+     * get the list of scene info which specified by users
      * @param searchLineForm form object for storing the searching parameters
      * @return GenericForm object which store the screen cap URL and other info
      */
-    public GenericForm getSavedLine(SearchLineForm searchLineForm) {
+    public GenericForm getSavedLines(SearchLineForm searchLineForm) {
         boolean isSearchByLine = false, isSearchByTimestamp = false;
 
-        if (!(searchLineForm.getLine()==null||searchLineForm.getLine().isBlank())) isSearchByLine = true;
-        if (!(searchLineForm.getStartTime() == null)) isSearchByTimestamp = true;
+        if (!(searchLineForm.getLine()==null||searchLineForm.getLine().isBlank())) {
+            isSearchByLine = true;
+        }
+        if (!(searchLineForm.getStartTime() == null)) {
+            isSearchByTimestamp = true;
+        }
         if (!isSearchByLine && !isSearchByTimestamp) {
-            log.error("Missing augments. Cannot determine searching criteria since both line and timestamp is empty.");
-            return new GenericForm(1,"Missing augments. Cannot determine searching criteria since both line and timestamp is empty.");
+            log.error(Constant.INSUFFICIENTAUGMENTDETERMINDSEARCHMETHOD);
+            return new GenericForm(1,Constant.INSUFFICIENTAUGMENTDETERMINDSEARCHMETHOD);
         }
 
         Optional<SavedSeriesEntity> savedSeriesResp = savedSeriesRepository.findBySeriesNameAndSeasonAndEpisode(
@@ -101,24 +115,24 @@ public class SavedLineServiceImpl {
                             || searchLineForm.getEpisode() == null
                             || searchLineForm.getSeriesName().isBlank()
             ) {
-                log.error("Missing augments. Insufficient info for finding anime series.");
-                return new GenericForm(1,"Missing augments. Insufficient info for finding anime series.");
+                log.error(Constant.MISSINGSERIESINFO);
+                return new GenericForm(1,Constant.MISSINGSERIESINFO);
             }
 
             if (savedSeriesResp.isEmpty()) {
-                log.error("No Record found.");
-                return new GenericForm(1,"No Record found.");
+                log.error(Constant.NORECORD);
+                return new GenericForm(1,Constant.NORECORD);
             }
 
             savedLineEntityResp = savedLineRepository.findBySeriesIdAndTimestamp(savedSeriesResp.get()
                     .getSeriesId(), searchLineForm.getStartTime());
         }
         if (savedLineEntityResp.isEmpty()) {
-            log.error("No Record found.");
-            return new GenericForm(1,"No Record found.");
+            log.error(Constant.NORECORD);
+            return new GenericForm(1,Constant.NORECORD);
         }
 
-        return new GetSavedLineForm(0, "success", savedLineEntityResp);
+        return new GetSavedLineForm(0, Constant.SUCCESS, savedLineEntityResp);
     }
 
     public GenericForm getScreenCapFromVideo(Integer savedLineid) {
@@ -126,8 +140,8 @@ public class SavedLineServiceImpl {
         SavedLineEntity findSavedLineResp = savedLineRepository.findBySavedLineId(savedLineid).orElse(null);
 
         if (findSavedLineResp == null) {
-            log.error("Record not found.");
-            return new GenericForm(1,"Record not found.");
+            log.error(Constant.NORECORD);
+            return new GenericForm(1,Constant.NORECORD);
         }
 
         SavedSeriesEntity findSavedSeriesResp = savedSeriesRepository.findBySeriesId(findSavedLineResp.getSeriesId()).orElse(null);
@@ -138,7 +152,8 @@ public class SavedLineServiceImpl {
         String outputFilePath = Constant.RESOURCEROOTPATH + Constant.SCREENCAPOUTPUTFOLDERNAME + outputFilename;
 
         // check line presented in findSavedLineResp. if not, save the screenshot as png and write the relative path to saved_line
-        if(findSavedLineResp.getScreenCapPath() == null ||findSavedLineResp.getScreenCapPath().isEmpty()){
+//        if(findSavedLineResp.getScreenCapPath() == null ||findSavedLineResp.getScreenCapPath().isEmpty()){
+        if(true){
             File videoFile = null;
 
             try {
@@ -174,17 +189,51 @@ public class SavedLineServiceImpl {
 
                 if (frame != null) {
                     BufferedImage bufferedImage = converter.getBufferedImage(frame);
+                    Graphics2D g2d = bufferedImage.createGraphics();
+
+                    // Set font
+                    Font font = new Font("Source Han Sans HK", Font.BOLD, 50);
+                    g2d.setFont(font);
+
+                    FontMetrics fm = g2d.getFontMetrics();
+
+                    int width = fm.stringWidth(findSavedLineResp.getLine());
+
+
+                    int xPos = (bufferedImage.getWidth() - width) / 2;
+                    int yPos = bufferedImage.getHeight() - fm.getHeight() + fm.getAscent();
+
+                    int x_offset = 5;
+                    int y_offset = 5;
+
+                    // Draw the outline
+                    g2d.setColor(Color.BLACK);
+                    int c = 0;
+                    for (int x = -x_offset; x <= x_offset; x += x_offset) {
+                        for (int y = -y_offset; y <= y_offset; y += y_offset) {
+                            g2d.drawString(findSavedLineResp.getLine(), xPos + x, yPos + y);
+                        }
+                    }
+
+                    // Draw the filled text
+                    g2d.setColor(Color.WHITE);
+                    g2d.drawString(findSavedLineResp.getLine(), xPos, yPos);
+
+                    // Dispose graphics
+                    g2d.dispose();
+
+
                     ImageIO.write(bufferedImage, "png", new File(outputFilePath));
                     log.info("Frame extracted and saved as " + outputFilename);
                 } else {
-                    log.error("No frame found at the specified timestamp.");
+                    log.error("Error occurred when saving the screen cap.");
                 }
                 grabber.stop();
                 String screenCapPath = ServletUriComponentsBuilder.fromCurrentContextPath().path("/static/screen_cap/")
                         .path(outputFilename).toUriString();
                 form.setPath(screenCapPath);
 
-                SavedLineEntity.Builder test = findSavedLineResp.toBuilder().screenCapPath(outputFilePath);
+                SavedLineEntity.Builder test = findSavedLineResp.toBuilder().screenCapPath(screenCapPath);
                 savedLineRepository.save(test.build());
             } catch (FrameGrabber.Exception e) {
                 throw new RuntimeException(e);
@@ -242,7 +291,7 @@ public class SavedLineServiceImpl {
             );
         }
 
-        return ResponseEntity.ok().body("Success");
+        return ResponseEntity.ok().body("Success"); //fixme remove response body in service
     }
 
 //    public ResponseEntity<String> saveImage2DB(String filename){
