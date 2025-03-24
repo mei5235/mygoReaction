@@ -195,29 +195,32 @@ public class SavedLineServiceImpl {
                     Font font = new Font("Source Han Sans HK", Font.BOLD, 50);
                     g2d.setFont(font);
 
+                    String[] lines = findSavedLineResp.getLine().split(System.lineSeparator());
+//                    String[] lines = {"hehe","hehe","hehe"};
+
                     FontMetrics fm = g2d.getFontMetrics();
+                    for (int stkaskml = lines.length-1; stkaskml >= 0; stkaskml--) {
+                        int width = fm.stringWidth(lines[stkaskml]);
 
-                    int width = fm.stringWidth(findSavedLineResp.getLine());
+                        int xPos = (bufferedImage.getWidth() - width) / 2;
+                        int yPos = bufferedImage.getHeight() - fm.getHeight() -fm.getHeight()*stkaskml - 20 + fm.getAscent();
 
+                        int x_offset = 5;
+                        int y_offset = 5;
 
-                    int xPos = (bufferedImage.getWidth() - width) / 2;
-                    int yPos = bufferedImage.getHeight() - fm.getHeight() + fm.getAscent();
-
-                    int x_offset = 5;
-                    int y_offset = 5;
-
-                    // Draw the outline
-                    g2d.setColor(Color.BLACK);
-                    int c = 0;
-                    for (int x = -x_offset; x <= x_offset; x += x_offset) {
-                        for (int y = -y_offset; y <= y_offset; y += y_offset) {
-                            g2d.drawString(findSavedLineResp.getLine(), xPos + x, yPos + y);
+                        // Draw the outline
+                        g2d.setColor(Color.BLACK);
+                        for (int x = -x_offset; x <= x_offset; x += x_offset) {
+                            for (int y = -y_offset; y <= y_offset; y += y_offset) {
+                                g2d.drawString(lines[stkaskml], xPos + x, yPos + y);
+                            }
                         }
-                    }
 
-                    // Draw the filled text
-                    g2d.setColor(Color.WHITE);
-                    g2d.drawString(findSavedLineResp.getLine(), xPos, yPos);
+                        // Draw the filled text
+                        g2d.setColor(Color.WHITE);
+                        g2d.drawString(lines[stkaskml], xPos, yPos);
+
+                    }
 
                     // Dispose graphics
                     g2d.dispose();
