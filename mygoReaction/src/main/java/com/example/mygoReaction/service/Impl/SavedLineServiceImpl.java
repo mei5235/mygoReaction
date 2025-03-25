@@ -20,11 +20,13 @@ import org.bytedeco.opencv.opencv_core.IplImage;
 import org.bytedeco.opencv.opencv_imgproc.CvFont;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ResourceUtils;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import utils.FilenameUtils;
 
@@ -185,18 +187,20 @@ public class SavedLineServiceImpl {
                 grabber.setTimestamp(timestamp);
                 frame = grabber.grabImage();
 
-//                String outputFilename = "";
-
                 if (frame != null) {
+                    ClassPathResource classPathResource = new ClassPathResource("SourceHanSansHK-Bold.otf");
+                    Font customFont = Font.createFont(Font.TRUETYPE_FONT,classPathResource.getFile()).deriveFont(50f);
+                    GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+                    ge.registerFont(customFont);
+
                     BufferedImage bufferedImage = converter.getBufferedImage(frame);
                     Graphics2D g2d = bufferedImage.createGraphics();
 
                     // Set font
                     Font font = new Font("Source Han Sans HK", Font.BOLD, 50);
-                    g2d.setFont(font);
+                    g2d.setFont(customFont);
 
                     String[] lines = findSavedLineResp.getLine().split(System.lineSeparator());
-//                    String[] lines = {"hehe","hehe","hehe"};
 
                     FontMetrics fm = g2d.getFontMetrics();
                     for (int stkaskml = lines.length-1; stkaskml >= 0; stkaskml--) {
@@ -241,6 +245,9 @@ public class SavedLineServiceImpl {
             } catch (FrameGrabber.Exception e) {
                 throw new RuntimeException(e);
             } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            catch (FontFormatException e) {
                 throw new RuntimeException(e);
             }
         }else{
