@@ -189,7 +189,7 @@ public class SavedLineServiceImpl {
 
                 if (frame != null) {
                     ClassPathResource classPathResource = new ClassPathResource("SourceHanSansHK-Bold.otf");
-                    Font customFont = Font.createFont(Font.TRUETYPE_FONT,classPathResource.getFile()).deriveFont(50f);
+                    Font customFont = Font.createFont(Font.TRUETYPE_FONT,classPathResource.getFile()).deriveFont(60f);
                     GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
                     ge.registerFont(customFont);
 
@@ -197,7 +197,6 @@ public class SavedLineServiceImpl {
                     Graphics2D g2d = bufferedImage.createGraphics();
 
                     // Set font
-                    Font font = new Font("Source Han Sans HK", Font.BOLD, 50);
                     g2d.setFont(customFont);
 
                     String[] lines = findSavedLineResp.getLine().split(System.lineSeparator());
@@ -207,7 +206,7 @@ public class SavedLineServiceImpl {
                         int width = fm.stringWidth(lines[stkaskml]);
 
                         int xPos = (bufferedImage.getWidth() - width) / 2;
-                        int yPos = bufferedImage.getHeight() - fm.getHeight() -fm.getHeight()*stkaskml - 20 + fm.getAscent();
+                        int yPos = bufferedImage.getHeight() - fm.getHeight() - fm.getHeight()*stkaskml - 40 + fm.getAscent();
 
                         int x_offset = 5;
                         int y_offset = 5;
