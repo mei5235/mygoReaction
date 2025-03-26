@@ -148,8 +148,8 @@ public class SavedLineServiceImpl {
         String outputFilePath = Constant.MYGO_REACTION_ASSET + Constant.SCREEN_CAP + outputFilename;
 
         // check line presented in findSavedLineResp. if not, save the screenshot as png and write the relative path to saved_line
-//        if(findSavedLineResp.getScreenCapPath() == null ||findSavedLineResp.getScreenCapPath().isEmpty()){
-        if(true){
+        if(findSavedLineResp.getScreenCapPath() == null ||findSavedLineResp.getScreenCapPath().isEmpty()){
+//        if(true){
             File videoFile = null;
 
             try {
@@ -213,11 +213,11 @@ public class SavedLineServiceImpl {
                 log.info("Frame extracted and saved as " + outputFilename);
 
                 grabber.stop();
-                String screenCapPath = ServletUriComponentsBuilder.fromCurrentContextPath().path("/static/screen_cap/")
-                        .path(outputFilename).toUriString();
+                String sssss = "/static/screen_cap/"+outputFilename;
+                String screenCapPath = ServletUriComponentsBuilder.fromCurrentContextPath().path(sssss).toUriString();
                 form.setPath(screenCapPath);
 
-                SavedLineEntity.Builder test = findSavedLineResp.toBuilder().screenCapPath(screenCapPath);
+                SavedLineEntity.Builder test = findSavedLineResp.toBuilder().screenCapPath(sssss);
                 savedLineRepository.save(test.build());
             } catch (FrameGrabber.Exception e) {
                 throw new RuntimeException(e);
@@ -229,7 +229,8 @@ public class SavedLineServiceImpl {
             }
         }else{
             // get path in DB directly and return
-            form.setPath(findSavedLineResp.getScreenCapPath());
+            String screenCapPath = ServletUriComponentsBuilder.fromCurrentContextPath().path(findSavedLineResp.getScreenCapPath()).toUriString();
+            form.setPath(screenCapPath);
         }
         form.setCode(0);
         form.setMessage("success");
