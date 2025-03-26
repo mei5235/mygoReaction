@@ -3,6 +3,7 @@ package com.example.mygoReaction.service.Impl;
 
 import com.example.mygoReaction.entity.SavedSeriesEntity;
 import com.example.mygoReaction.entity.SavedLineEntity;
+import com.example.mygoReaction.model.G2DSybtitleConfig;
 import com.example.mygoReaction.model.dto.Test2Dto;
 import com.example.mygoReaction.model.dto.SearchLineForm;
 import com.example.mygoReaction.model.form.GenericForm;
@@ -197,26 +198,13 @@ public class SavedLineServiceImpl {
                 g2d.setFont(customFont);
 
                 String[] lines = findSavedLineResp.getLine().split(System.lineSeparator());
+                G2DSybtitleConfig config = new G2DSybtitleConfig(
+                        bufferedImage.getWidth(),
+                        bufferedImage.getHeight(),
+                        5, 1,1
+                );
 
-                FontMetrics fm = g2d.getFontMetrics();
-                for (int lineCount = lines.length-1; lineCount >= 0; lineCount--) {
-                    int width = fm.stringWidth(lines[lineCount]);
-
-                    // make subtitle line center
-                    int xPos = (bufferedImage.getWidth() - width) / 2;
-                    // set y coordinate to 40px higher than bottom of the image;
-                    // if there are multiple lines, set the line by one line upper
-                    int yPos = bufferedImage.getHeight() - fm.getHeight() - fm.getHeight()*lineCount - 40 + fm.getAscent();
-
-                    int offset = 5;
-
-                    g2d.setColor(Color.BLACK);
-                    drawSubtitle(g2d, offset, xPos, yPos, lines[lineCount]);
-
-                    g2d.setColor(Color.WHITE);
-                    g2d.drawString(lines[lineCount], xPos, yPos);
-
-                }
+                drawSubtitle(g2d, lines, config);
 
                 // Dispose graphics
                 g2d.dispose();
@@ -248,23 +236,36 @@ public class SavedLineServiceImpl {
         return form;
     }
 
-
     /**
-     * Draw subtitle in specific coordinate in image
+     * Draw subtitle on image
      * @param g2d image context in Graphic2D
-     * @param offset border width of the subtitle
-     * @param xPos x coordinate of the subtitle in image
-     * @param yPos y coordinate of the subtitle in image
      * @param lines subtitle line (split with line separator)
+     * @param config config object
      */
-    private void drawSubtitle(Graphics2D g2d, int offset, int xPos, int yPos, String lines) {
-        // Draw the outline
-        for (int x = -offset; x <= offset; x += offset) {
-            for (int y = -offset; y <= offset; y += offset) {
-                g2d.drawString(lines, xPos + x, yPos + y);
+    private void drawSubtitle(Graphics2D g2d, String[] lines, G2DSybtitleConfig config) {
+        FontMetrics fm = g2d.getFontMetrics();
+        for (int lineCount = lines.length-1; lineCount >= 0; lineCount--) {
+            int width = fm.stringWidth(lines[lineCount]);
+            // make subtitle line center
+            int xPos = ((int) (config.width()/ config.xScale()) - width) / 2;
+            // set y coordinate to 40px higher than bottom of the image;
+            // if there are multiple lines, set the line by one line upper
+            int yPos = (int) (config.height()/ config.yScale()) - fm.getHeight() - fm.getHeight()*lineCount - 40 + fm.getAscent();
+
+            g2d.setColor(Color.BLACK);
+            // Draw the outline
+            for (int x = -config.offset(); x <= config.offset(); x += 1) {
+                for (int y = -config.offset(); y <= config.offset(); y += 1) {
+                    g2d.drawString(lines[lineCount], xPos + x, yPos + y);
+                }
             }
+
+            g2d.setColor(Color.WHITE);
+            g2d.drawString(lines[lineCount], xPos, yPos);
+
         }
     }
+
 
     @Transactional
     public ResponseEntity<String> importFromSubtitle(String subtitleFilename) {
