@@ -16,8 +16,6 @@ import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameGrabber;
 import org.bytedeco.javacv.Java2DFrameConverter;
-import org.bytedeco.opencv.opencv_core.IplImage;
-import org.bytedeco.opencv.opencv_imgproc.CvFont;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.ClassPathResource;
@@ -26,16 +24,11 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.ResourceUtils;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import utils.FilenameUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
-import java.awt.font.FontRenderContext;
-import java.awt.font.GlyphVector;
-import java.awt.font.TextLayout;
-import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -95,8 +88,8 @@ public class SavedLineServiceImpl {
             isSearchByTimestamp = true;
         }
         if (!isSearchByLine && !isSearchByTimestamp) {
-            log.error(Constant.INSUFFICIENTAUGMENTDETERMINDSEARCHMETHOD);
-            return new GenericForm(1,Constant.INSUFFICIENTAUGMENTDETERMINDSEARCHMETHOD);
+            log.error(Constant.INSUFFICIENT＿AUGMENT＿DETERMIND＿SEARCH＿METHOD);
+            return new GenericForm(1,Constant.INSUFFICIENT＿AUGMENT＿DETERMIND＿SEARCH＿METHOD);
         }
 
         Optional<SavedSeriesEntity> savedSeriesResp = savedSeriesRepository.findBySeriesNameAndSeasonAndEpisode(
@@ -117,21 +110,21 @@ public class SavedLineServiceImpl {
                             || searchLineForm.getEpisode() == null
                             || searchLineForm.getSeriesName().isBlank()
             ) {
-                log.error(Constant.MISSINGSERIESINFO);
-                return new GenericForm(1,Constant.MISSINGSERIESINFO);
+                log.error(Constant.MISSING＿SERIES＿INFO);
+                return new GenericForm(1,Constant.MISSING＿SERIES＿INFO);
             }
 
             if (savedSeriesResp.isEmpty()) {
-                log.error(Constant.NORECORD);
-                return new GenericForm(1,Constant.NORECORD);
+                log.error(Constant.NO＿RECORD);
+                return new GenericForm(1,Constant.NO＿RECORD);
             }
 
             savedLineEntityResp = savedLineRepository.findBySeriesIdAndTimestamp(savedSeriesResp.get()
                     .getSeriesId(), searchLineForm.getStartTime());
         }
         if (savedLineEntityResp.isEmpty()) {
-            log.error(Constant.NORECORD);
-            return new GenericForm(1,Constant.NORECORD);
+            log.error(Constant.NO＿RECORD);
+            return new GenericForm(1,Constant.NO＿RECORD);
         }
 
         return new GetSavedLineForm(0, Constant.SUCCESS, savedLineEntityResp);
@@ -142,16 +135,16 @@ public class SavedLineServiceImpl {
         SavedLineEntity findSavedLineResp = savedLineRepository.findBySavedLineId(savedLineid).orElse(null);
 
         if (findSavedLineResp == null) {
-            log.error(Constant.NORECORD);
-            return new GenericForm(1,Constant.NORECORD);
+            log.error(Constant.NO＿RECORD);
+            return new GenericForm(1,Constant.NO＿RECORD);
         }
 
         SavedSeriesEntity findSavedSeriesResp = savedSeriesRepository.findBySeriesId(findSavedLineResp.getSeriesId()).orElse(null);
 
         String videoFilename = findSavedSeriesResp.getSeriesName() + "-S" + String.format("%02d", findSavedSeriesResp.getSeason()) + "-E" + String.format("%02d", findSavedSeriesResp.getEpisode()) ;
-        String videoFilePath = Constant.RESOURCEROOTPATH + Constant.VIDEOFOLDERNAME + findSavedSeriesResp.getSeriesName() + "/" + videoFilename + "." + Constant.extension.MKV;
+        String videoFilePath = Constant.MYGO_REACTION_ASSET + Constant.VIDEO_FOLDERNAME + findSavedSeriesResp.getSeriesName() + "/" + videoFilename + "." + Constant.extension.MKV;
         String outputFilename = FilenameUtils.getUniqueOutputFilename(videoFilename + "." + Constant.extension.PNG);
-        String outputFilePath = Constant.RESOURCEROOTPATH + Constant.SCREENCAPOUTPUTFOLDERNAME + outputFilename;
+        String outputFilePath = Constant.MYGO_REACTION_ASSET + Constant.SCREEN_CAP + outputFilename;
 
         // check line presented in findSavedLineResp. if not, save the screenshot as png and write the relative path to saved_line
 //        if(findSavedLineResp.getScreenCapPath() == null ||findSavedLineResp.getScreenCapPath().isEmpty()){
@@ -263,7 +256,7 @@ public class SavedLineServiceImpl {
         File subtitleFile = null;
 
         try {
-            subtitleFile = new File(Constant.RESOURCEROOTPATH + Constant.SUBTITLEFOLDERNAME + subtitleFilename);
+            subtitleFile = new File(Constant.MYGO_REACTION_ASSET + Constant.SUBTITLE＿FOLDERNAME + subtitleFilename);
         } catch (NullPointerException e) {
             return new ResponseEntity<>(
                     Constant.SUBTITLEFILENOTFOUND,
@@ -277,7 +270,7 @@ public class SavedLineServiceImpl {
         if (arr.length < 3) {
             return ResponseEntity
                     .badRequest()
-                    .body(Constant.INAPPROPRIATESUBTITLEFILEFORMAT);
+                    .body(Constant.INAPPROPRIATE_SUBTITLE_FILE_FORMAT);
         }
 
         // record the series info in the save_series table

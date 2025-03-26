@@ -53,8 +53,8 @@ public class AssSubtitleExtractServiceImpl implements SubtitleExtractService {
 
                 SavedLineEntity.Builder t2e = SavedLineEntity.builder();
                 t2e.seriesId(seriesId)
-                        .startTime(Instant.parse("1970-01-01T0"+subArr[1]+"+08:00")) //TODO padding the hour to 2 digit with 0
-                        .endTime(Instant.parse("1970-01-01T0"+subArr[2]+"+08:00")) //TODO padding the hour to 2 digit with 0
+                        .startTime(Instant.parse("1970-01-01T"+String.format("%02d",Integer.parseInt(subArr[1]))+"+08:00"))
+                        .endTime(Instant.parse("1970-01-01T"+String.format("%02d",Integer.parseInt(subArr[2]))+"+08:00"))
                         .line(subArr[9])
                         .created_by(Constant.CREATEDBY)
                         .updated_by(Constant.CREATEDBY);
