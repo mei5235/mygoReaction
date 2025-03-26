@@ -141,7 +141,7 @@ public class SavedLineServiceImpl {
 
         SavedSeriesEntity findSavedSeriesResp = savedSeriesRepository.findBySeriesId(findSavedLineResp.getSeriesId()).orElse(null);
 
-        String videoFilename = findSavedSeriesResp.getSeriesName() + "-S" + String.format("%02d", findSavedSeriesResp.getSeason()) + "-E" + String.format("%02d", findSavedSeriesResp.getEpisode()) ;
+        String videoFilename = findSavedSeriesResp.getSeriesName() + "-S" + String.format("%02d", findSavedSeriesResp.getSeason()) + "-E" + String.format("%02d", findSavedSeriesResp.getEpisode());
         String videoFilePath = Constant.MYGO_REACTION_ASSET + Constant.VIDEO_FOLDERNAME + findSavedSeriesResp.getSeriesName() + "/" + videoFilename + "." + Constant.extension.MKV;
         String outputFilename = FilenameUtils.getUniqueOutputFilename(videoFilename + "." + Constant.extension.PNG);
         String outputFilePath = Constant.MYGO_REACTION_ASSET + Constant.SCREEN_CAP + outputFilename;
@@ -180,53 +180,50 @@ public class SavedLineServiceImpl {
                 grabber.setTimestamp(timestamp);
                 frame = grabber.grabImage();
 
-                if (frame != null) {
-                    ClassPathResource classPathResource = new ClassPathResource("SourceHanSansHK-Bold.otf");
-                    Font customFont = Font.createFont(Font.TRUETYPE_FONT,classPathResource.getFile()).deriveFont(60f);
-                    GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-                    ge.registerFont(customFont);
-
-                    BufferedImage bufferedImage = converter.getBufferedImage(frame);
-                    Graphics2D g2d = bufferedImage.createGraphics();
-
-                    // Set font
-                    g2d.setFont(customFont);
-
-                    String[] lines = findSavedLineResp.getLine().split(System.lineSeparator());
-
-                    FontMetrics fm = g2d.getFontMetrics();
-                    for (int stkaskml = lines.length-1; stkaskml >= 0; stkaskml--) {
-                        int width = fm.stringWidth(lines[stkaskml]);
-
-                        int xPos = (bufferedImage.getWidth() - width) / 2;
-                        int yPos = bufferedImage.getHeight() - fm.getHeight() - fm.getHeight()*stkaskml - 40 + fm.getAscent();
-
-                        int x_offset = 5;
-                        int y_offset = 5;
-
-                        // Draw the outline
-                        g2d.setColor(Color.BLACK);
-                        for (int x = -x_offset; x <= x_offset; x += x_offset) {
-                            for (int y = -y_offset; y <= y_offset; y += y_offset) {
-                                g2d.drawString(lines[stkaskml], xPos + x, yPos + y);
-                            }
-                        }
-
-                        // Draw the filled text
-                        g2d.setColor(Color.WHITE);
-                        g2d.drawString(lines[stkaskml], xPos, yPos);
-
-                    }
-
-                    // Dispose graphics
-                    g2d.dispose();
-
-
-                    ImageIO.write(bufferedImage, "png", new File(outputFilePath));
-                    log.info("Frame extracted and saved as " + outputFilename);
-                } else {
+                if (frame == null) {
                     log.error("Error occurred when saving the screen cap.");
+                    throw new FrameGrabber.Exception("nNo frame grabbed.");
                 }
+
+                // use the same font type to Muse Anime HK
+                ClassPathResource classPathResource = new ClassPathResource("SourceHanSansHK-Bold.otf");
+                Font customFont = Font.createFont(Font.TRUETYPE_FONT,classPathResource.getFile()).deriveFont(60f);
+                GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+                ge.registerFont(customFont);
+
+                BufferedImage bufferedImage = converter.getBufferedImage(frame);
+                Graphics2D g2d = bufferedImage.createGraphics();
+
+                g2d.setFont(customFont);
+
+                String[] lines = findSavedLineResp.getLine().split(System.lineSeparator());
+
+                FontMetrics fm = g2d.getFontMetrics();
+                for (int lineCount = lines.length-1; lineCount >= 0; lineCount--) {
+                    int width = fm.stringWidth(lines[lineCount]);
+
+                    // make subtitle line center
+                    int xPos = (bufferedImage.getWidth() - width) / 2;
+                    // set y coordinate to 40px higher than bottom of the image;
+                    // if there are multiple lines, set the line by one line upper
+                    int yPos = bufferedImage.getHeight() - fm.getHeight() - fm.getHeight()*lineCount - 40 + fm.getAscent();
+
+                    int offset = 5;
+
+                    g2d.setColor(Color.BLACK);
+                    drawSubtitle(g2d, offset, xPos, yPos, lines[lineCount]);
+
+                    g2d.setColor(Color.WHITE);
+                    g2d.drawString(lines[lineCount], xPos, yPos);
+
+                }
+
+                // Dispose graphics
+                g2d.dispose();
+
+                ImageIO.write(bufferedImage, "png", new File(outputFilePath));
+                log.info("Frame extracted and saved as " + outputFilename);
+
                 grabber.stop();
                 String screenCapPath = ServletUriComponentsBuilder.fromCurrentContextPath().path("/static/screen_cap/")
                         .path(outputFilename).toUriString();
@@ -249,6 +246,24 @@ public class SavedLineServiceImpl {
         form.setCode(0);
         form.setMessage("success");
         return form;
+    }
+
+
+    /**
+     * Draw subtitle in specific coordinate in image
+     * @param g2d image context in Graphic2D
+     * @param offset border width of the subtitle
+     * @param xPos x coordinate of the subtitle in image
+     * @param yPos y coordinate of the subtitle in image
+     * @param lines subtitle line (split with line separator)
+     */
+    private void drawSubtitle(Graphics2D g2d, int offset, int xPos, int yPos, String lines) {
+        // Draw the outline
+        for (int x = -offset; x <= offset; x += offset) {
+            for (int y = -offset; y <= offset; y += offset) {
+                g2d.drawString(lines, xPos + x, yPos + y);
+            }
+        }
     }
 
     @Transactional
