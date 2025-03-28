@@ -1,6 +1,5 @@
 package com.example.mygoReaction.service.Impl;
 
-
 import com.example.mygoReaction.entity.SavedSeriesEntity;
 import com.example.mygoReaction.entity.SavedLineEntity;
 import com.example.mygoReaction.model.G2DSybtitleConfig;
@@ -30,6 +29,7 @@ import utils.FilenameUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -56,8 +56,7 @@ public class SavedLineServiceImpl {
     public SavedLineServiceImpl(
             SavedLineRepository savedLineRepository,
             SavedSeriesRepository savedSeriesRepository,
-            @Qualifier("SrtSubtitleExtractServiceImpl") SubtitleExtractService subtitleExtractService
-    ) {
+            @Qualifier("SrtSubtitleExtractServiceImpl") SubtitleExtractService subtitleExtractService) {
         this.savedLineRepository = savedLineRepository;
         this.savedSeriesRepository = savedSeriesRepository;
         this.subtitleExtractService = subtitleExtractService;
@@ -65,6 +64,7 @@ public class SavedLineServiceImpl {
 
     /**
      * List all saved_line record matching the searching criteria
+     * 
      * @param t2d data form object for searching the line
      * @return response form object with the records which matching the criteria
      */
@@ -73,16 +73,16 @@ public class SavedLineServiceImpl {
         return new GetSavedLineForm(0, "success", resp);
     }
 
-
     /**
      * get the list of scene info which specified by users
+     * 
      * @param searchLineForm form object for storing the searching parameters
      * @return GenericForm object which store the screen cap URL and other info
      */
     public GenericForm getSavedLines(SearchLineForm searchLineForm) {
         boolean isSearchByLine = false, isSearchByTimestamp = false;
 
-        if (!(searchLineForm.getLine()==null||searchLineForm.getLine().isBlank())) {
+        if (!(searchLineForm.getLine() == null || searchLineForm.getLine().isBlank())) {
             isSearchByLine = true;
         }
         if (!(searchLineForm.getStartTime() == null)) {
@@ -90,34 +90,31 @@ public class SavedLineServiceImpl {
         }
         if (!isSearchByLine && !isSearchByTimestamp) {
             log.error(Constant.INSUFFICIENT＿AUGMENT＿DETERMIND＿SEARCH＿METHOD);
-            return new GenericForm(1,Constant.INSUFFICIENT＿AUGMENT＿DETERMIND＿SEARCH＿METHOD);
+            return new GenericForm(1, Constant.INSUFFICIENT＿AUGMENT＿DETERMIND＿SEARCH＿METHOD);
         }
 
         Optional<SavedSeriesEntity> savedSeriesResp = savedSeriesRepository.findBySeriesNameAndSeasonAndEpisode(
                 searchLineForm.getSeriesName(),
                 searchLineForm.getSeason(),
-                searchLineForm.getEpisode()
-        );
+                searchLineForm.getEpisode());
 
         List<SavedLineEntity> savedLineEntityResp = null;
         if (isSearchByLine) {
             Integer id = savedSeriesResp.map(SavedSeriesEntity::getSeriesId).orElse(null);
-            savedLineEntityResp = savedLineRepository.findByLineContaining(id,searchLineForm.getLine());
+            savedLineEntityResp = savedLineRepository.findByLineContaining(id, searchLineForm.getLine());
         }
         if (isSearchByTimestamp) {
-            if (
-                    searchLineForm.getSeason() == null
-                            || searchLineForm.getSeriesName()==null
-                            || searchLineForm.getEpisode() == null
-                            || searchLineForm.getSeriesName().isBlank()
-            ) {
+            if (searchLineForm.getSeason() == null
+                    || searchLineForm.getSeriesName() == null
+                    || searchLineForm.getEpisode() == null
+                    || searchLineForm.getSeriesName().isBlank()) {
                 log.error(Constant.MISSING＿SERIES＿INFO);
-                return new GenericForm(1,Constant.MISSING＿SERIES＿INFO);
+                return new GenericForm(1, Constant.MISSING＿SERIES＿INFO);
             }
 
             if (savedSeriesResp.isEmpty()) {
                 log.error(Constant.NO＿RECORD);
-                return new GenericForm(1,Constant.NO＿RECORD);
+                return new GenericForm(1, Constant.NO＿RECORD);
             }
 
             savedLineEntityResp = savedLineRepository.findBySeriesIdAndTimestamp(savedSeriesResp.get()
@@ -125,7 +122,7 @@ public class SavedLineServiceImpl {
         }
         if (savedLineEntityResp.isEmpty()) {
             log.error(Constant.NO＿RECORD);
-            return new GenericForm(1,Constant.NO＿RECORD);
+            return new GenericForm(1, Constant.NO＿RECORD);
         }
 
         return new GetSavedLineForm(0, Constant.SUCCESS, savedLineEntityResp);
@@ -137,19 +134,24 @@ public class SavedLineServiceImpl {
 
         if (findSavedLineResp == null) {
             log.error(Constant.NO＿RECORD);
-            return new GenericForm(1,Constant.NO＿RECORD);
+            return new GenericForm(1, Constant.NO＿RECORD);
         }
 
-        SavedSeriesEntity findSavedSeriesResp = savedSeriesRepository.findBySeriesId(findSavedLineResp.getSeriesId()).orElse(null);
+        SavedSeriesEntity findSavedSeriesResp = savedSeriesRepository.findBySeriesId(findSavedLineResp.getSeriesId())
+                .orElse(null);
 
-        String videoFilename = findSavedSeriesResp.getSeriesName() + "-S" + String.format("%02d", findSavedSeriesResp.getSeason()) + "-E" + String.format("%02d", findSavedSeriesResp.getEpisode());
-        String videoFilePath = Constant.MYGO_REACTION_ASSET + Constant.VIDEO_FOLDERNAME + findSavedSeriesResp.getSeriesName() + "/" + videoFilename + "." + Constant.extension.MKV;
+        String videoFilename = findSavedSeriesResp.getSeriesName() + "-S"
+                + String.format("%02d", findSavedSeriesResp.getSeason()) + "-E"
+                + String.format("%02d", findSavedSeriesResp.getEpisode());
+        String videoFilePath = Constant.MYGO_REACTION_ASSET + Constant.VIDEO_FOLDERNAME
+                + findSavedSeriesResp.getSeriesName() + "/" + videoFilename + "." + Constant.extension.MKV;
         String outputFilename = FilenameUtils.getUniqueOutputFilename(videoFilename + "." + Constant.extension.PNG);
         String outputFilePath = Constant.MYGO_REACTION_ASSET + Constant.SCREEN_CAP + outputFilename;
 
-        // check line presented in findSavedLineResp. if not, save the screenshot as png and write the relative path to saved_line
-        if(findSavedLineResp.getScreenCapPath() == null ||findSavedLineResp.getScreenCapPath().isEmpty()){
-//        if(true){
+        // check line presented in findSavedLineResp. if not, save the screenshot as png
+        // and write the relative path to saved_line
+        if (findSavedLineResp.getScreenCapPath() == null || findSavedLineResp.getScreenCapPath().isEmpty()) {
+            // if(true){
             File videoFile = null;
 
             try {
@@ -161,8 +163,7 @@ public class SavedLineServiceImpl {
 
             try (
                     FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoFile);
-                    Java2DFrameConverter converter = new Java2DFrameConverter();
-            ) {
+                    Java2DFrameConverter converter = new Java2DFrameConverter();) {
                 grabber.start();
                 // get max timestamp of the video
                 long timeLength = grabber.getLengthInTime();
@@ -171,10 +172,10 @@ public class SavedLineServiceImpl {
                 Frame frame = grabber.grabImage();
                 long startTime = frame.timestamp;
 
-//            int second = 60;
+                // int second = 60;
                 Instant he = Instant.parse("1970-01-01T00:00:00.000+08:00");
-//            Instant startTimestamp = Instant.parse("1970-01-01T00:01:00.123+08:00");
-//            long second = he.until(startTimestamp, ChronoUnit.SECONDS);
+                // Instant startTimestamp = Instant.parse("1970-01-01T00:01:00.123+08:00");
+                // long second = he.until(startTimestamp, ChronoUnit.SECONDS);
                 long second = he.until(findSavedLineResp.getStartTime(), ChronoUnit.SECONDS);
                 long timestamp = startTime + second * 1000000L; // 1 minute and 123 milliseconds
 
@@ -187,22 +188,32 @@ public class SavedLineServiceImpl {
                 }
 
                 // use the same font type to Muse Anime HK
-                ClassPathResource classPathResource = new ClassPathResource("SourceHanSansHK-Bold.otf");
-                Font customFont = Font.createFont(Font.TRUETYPE_FONT,classPathResource.getFile()).deriveFont(60f);
+                // ClassPathResource classPathResource = new
+                // ClassPathResource("SourceHanSansHK-Bold.otf");
+                ClassPathResource classPathResource = new ClassPathResource("TW-Kai-98_1.ttf");
+                Font customFont = Font.createFont(Font.TRUETYPE_FONT, classPathResource.getFile()).deriveFont(60f);
                 GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
                 ge.registerFont(customFont);
 
                 BufferedImage bufferedImage = converter.getBufferedImage(frame);
                 Graphics2D g2d = bufferedImage.createGraphics();
 
+                // System.out.println("");
+                // System.out.println("");
+                //
+                // Font fonts[] = ge.getAllFonts();
+                // for(Font f : fonts) System.out.println(f);
+                // System.out.println("");
+                // System.out.println("");
+
+                // Font f = new Font("DFKai-SB", Font.PLAIN, 60);
                 g2d.setFont(customFont);
 
                 String[] lines = findSavedLineResp.getLine().split(System.lineSeparator());
                 G2DSybtitleConfig config = new G2DSybtitleConfig(
                         bufferedImage.getWidth(),
                         bufferedImage.getHeight(),
-                        5, 1,1
-                );
+                        5, 1, 0.9);
 
                 drawSubtitle(g2d, lines, config);
 
@@ -213,7 +224,7 @@ public class SavedLineServiceImpl {
                 log.info("Frame extracted and saved as " + outputFilename);
 
                 grabber.stop();
-                String sssss = "/static/screen_cap/"+outputFilename;
+                String sssss = "/static/screen_cap/" + outputFilename;
                 String screenCapPath = ServletUriComponentsBuilder.fromCurrentContextPath().path(sssss).toUriString();
                 form.setPath(screenCapPath);
 
@@ -223,14 +234,16 @@ public class SavedLineServiceImpl {
                 throw new RuntimeException(e);
             } catch (IOException e) {
                 throw new RuntimeException(e);
-            }
-            catch (FontFormatException e) {
+            } catch (FontFormatException e) {
                 throw new RuntimeException(e);
             }
-        }else{
+        } else {
             // get path in DB directly and return
-            String screenCapPath = ServletUriComponentsBuilder.fromCurrentContextPath().path(findSavedLineResp.getScreenCapPath()).toUriString();
+            String screenCapPath = ServletUriComponentsBuilder.fromCurrentContextPath()
+                    .path(findSavedLineResp.getScreenCapPath()).toUriString();
             form.setPath(screenCapPath);
+            // todo check url is broken or not, remove the path in DB and call
+            // getScreenCapFromVideo() for getting a new screenCap
         }
         form.setCode(0);
         form.setMessage("success");
@@ -239,21 +252,28 @@ public class SavedLineServiceImpl {
 
     /**
      * Draw subtitle on image
-     * @param g2d image context in Graphic2D
-     * @param lines subtitle line (split with line separator)
+     * 
+     * @param g2d    image context in Graphic2D
+     * @param lines  subtitle line (split with line separator)
      * @param config config object
      */
     private void drawSubtitle(Graphics2D g2d, String[] lines, G2DSybtitleConfig config) {
         FontMetrics fm = g2d.getFontMetrics();
-        for (int lineCount = lines.length-1; lineCount >= 0; lineCount--) {
+        for (int lineCount = lines.length - 1; lineCount >= 0; lineCount--) {
             int width = fm.stringWidth(lines[lineCount]);
             // make subtitle line center
-            int xPos = ((int) (config.width()/ config.xScale()) - width) / 2;
+            int xPos = ((int) (config.width() / config.xScale()) - width) / 2;
             // set y coordinate to 40px higher than bottom of the image;
             // if there are multiple lines, set the line by one line upper
-            int yPos = (int) (config.height()/ config.yScale()) - fm.getHeight() - fm.getHeight()*lineCount - 40 + fm.getAscent();
+            int yPos = (int) (config.height() / config.yScale()) - fm.getHeight() - fm.getHeight() * lineCount - 40
+                    + fm.getAscent();
 
-            g2d.setColor(Color.BLACK);
+            AffineTransform at = g2d.getTransform();
+            at.setTransform(at);
+            at.scale(config.xScale(), config.yScale());
+            g2d.setTransform(at);
+
+            g2d.setColor(Color.BLACK); // todo add to G2DSubtitleConfig object
             // Draw the outline
             for (int x = -config.offset(); x <= config.offset(); x += 1) {
                 for (int y = -config.offset(); y <= config.offset(); y += 1) {
@@ -261,12 +281,11 @@ public class SavedLineServiceImpl {
                 }
             }
 
-            g2d.setColor(Color.WHITE);
+            g2d.setColor(Color.YELLOW); // todo add to G2DSubtitleConfig object
             g2d.drawString(lines[lineCount], xPos, yPos);
 
         }
     }
-
 
     @Transactional
     public ResponseEntity<String> importFromSubtitle(String subtitleFilename) {
@@ -277,8 +296,7 @@ public class SavedLineServiceImpl {
         } catch (NullPointerException e) {
             return new ResponseEntity<>(
                     Constant.SUBTITLEFILENOTFOUND,
-                    HttpStatusCode.valueOf(500)
-            );
+                    HttpStatusCode.valueOf(500));
         }
 
         // information array from subtitle filename
@@ -306,45 +324,44 @@ public class SavedLineServiceImpl {
         } catch (IOException e) {
             return new ResponseEntity<>(
                     "Error occurred when importing subtitles into DB.",
-                    HttpStatusCode.valueOf(500)
-            );
+                    HttpStatusCode.valueOf(500));
         }
 
-        return ResponseEntity.ok().body("Success"); //fixme remove response body in service
+        return ResponseEntity.ok().body("Success"); // fixme remove response body in service
     }
 
-//    public ResponseEntity<String> saveImage2DB(String filename){
-//        String pathFromResource = "image/";
-//        File imageTestFile = null;
-//        BufferedReader bfr = null;
-//
-//        try {
-//            imageTestFile = resourceLoader
-//                    .getResource("classpath:"+pathFromResource+filename)
-//                    .getFile();
-//            byte[] content = null;
-//            try {
-//                content = Files.readAllBytes(imageTestFile.toPath());
-//            } catch (final IOException e) {
-//            }
-//            MultipartFile result = new MockMultipartFile(filename,
-//                    filename, "image/jpeg", content);
-//
-//            Test2Entity record = test2Repository.findById(1).get();
-//            test2Repository.save(
-//                    record.toBuilder()
-//                            .screen_cap_thumbnail(result.getBytes())
-//                            .screen_cap_path(imageTestFile.toPath().toString())
-//                            .updated_by("update spring")
-//                            .build()
-//            );
-//
-//        } catch (IOException e) {
-//            return new ResponseEntity<>(
-//                    "Specified subtitle file not found",
-//                    HttpStatusCode.valueOf(500)
-//            );
-//        }
-//        return ResponseEntity.ok("Success");
-//    }
+    // public ResponseEntity<String> saveImage2DB(String filename){
+    // String pathFromResource = "image/";
+    // File imageTestFile = null;
+    // BufferedReader bfr = null;
+    //
+    // try {
+    // imageTestFile = resourceLoader
+    // .getResource("classpath:"+pathFromResource+filename)
+    // .getFile();
+    // byte[] content = null;
+    // try {
+    // content = Files.readAllBytes(imageTestFile.toPath());
+    // } catch (final IOException e) {
+    // }
+    // MultipartFile result = new MockMultipartFile(filename,
+    // filename, "image/jpeg", content);
+    //
+    // Test2Entity record = test2Repository.findById(1).get();
+    // test2Repository.save(
+    // record.toBuilder()
+    // .screen_cap_thumbnail(result.getBytes())
+    // .screen_cap_path(imageTestFile.toPath().toString())
+    // .updated_by("update spring")
+    // .build()
+    // );
+    //
+    // } catch (IOException e) {
+    // return new ResponseEntity<>(
+    // "Specified subtitle file not found",
+    // HttpStatusCode.valueOf(500)
+    // );
+    // }
+    // return ResponseEntity.ok("Success");
+    // }
 }
