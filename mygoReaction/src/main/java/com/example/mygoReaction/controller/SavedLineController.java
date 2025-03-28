@@ -59,10 +59,10 @@ public class SavedLineController {
      * @return GenericForm object which store the screen cap URL and other info
      */
     @RequestMapping(method = RequestMethod.GET, value = "getScreenCapFromVideo")
-    public ResponseEntity<GenericForm> getScreenCapFromVideo(@RequestParam Integer savedLineId){
+    public ResponseEntity<GenericForm> getScreenCapFromVideo(@RequestParam Integer savedLineId, @RequestParam String style){
         GenericForm hehe = null;
         try {
-             hehe = savedLineServiceImpl.getScreenCapFromVideo(savedLineId);
+             hehe = savedLineServiceImpl.getScreenCapFromVideo(savedLineId, style);
         } catch (Exception e) {
             log.error("error");
             log.error(e.getMessage(),e);

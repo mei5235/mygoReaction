@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -128,8 +129,14 @@ public class SavedLineServiceImpl {
         return new GetSavedLineForm(0, Constant.SUCCESS, savedLineEntityResp);
     }
 
-    public GenericForm getScreenCapFromVideo(Integer savedLineid) {
+    public GenericForm getScreenCapFromVideo(Integer savedLineid, String style) {
         HeheForm form = new HeheForm();
+
+        if (Constant.capScreenStyle.stream().noneMatch(style::equalsIgnoreCase)){
+            log.error(Constant.UNKNOW_STYLE);
+            return new GenericForm(1, Constant.UNKNOW_STYLE);
+        }
+
         SavedLineEntity findSavedLineResp = savedLineRepository.findBySavedLineId(savedLineid).orElse(null);
 
         if (findSavedLineResp == null) {
@@ -150,7 +157,13 @@ public class SavedLineServiceImpl {
 
         // check line presented in findSavedLineResp. if not, save the screenshot as png
         // and write the relative path to saved_line
-        if (findSavedLineResp.getScreenCapPath() == null || findSavedLineResp.getScreenCapPath().isEmpty()) {
+        boolean isStandardScreenCapEmpty = findSavedLineResp.getScreenCapPath() == null
+                || findSavedLineResp.getScreenCapPath().isEmpty();
+        boolean isSoapOperaScreenCapEmpty = findSavedLineResp.getSoapOperaScnCapPath() == null
+                || findSavedLineResp.getSoapOperaScnCapPath().isEmpty();
+
+        if (style.equalsIgnoreCase(Constant.capScreenStyle.get(0)) && isStandardScreenCapEmpty
+                || style.equalsIgnoreCase(Constant.capScreenStyle.get(1)) && isSoapOperaScreenCapEmpty) {
             // if(true){
             File videoFile = null;
 
@@ -188,9 +201,11 @@ public class SavedLineServiceImpl {
                 }
 
                 // use the same font type to Muse Anime HK
-                // ClassPathResource classPathResource = new
-                // ClassPathResource("SourceHanSansHK-Bold.otf");
-                ClassPathResource classPathResource = new ClassPathResource("TW-Kai-98_1.ttf");
+                String fontFamilyName = "SourceHanSansHK-Bold.otf";
+                if(style.equalsIgnoreCase(Constant.capScreenStyle.get(1))){
+                    fontFamilyName = "TW-Kai-98_1.ttf";
+                }
+                ClassPathResource classPathResource = new ClassPathResource(fontFamilyName);
                 Font customFont = Font.createFont(Font.TRUETYPE_FONT, classPathResource.getFile()).deriveFont(60f);
                 GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
                 ge.registerFont(customFont);
@@ -198,22 +213,18 @@ public class SavedLineServiceImpl {
                 BufferedImage bufferedImage = converter.getBufferedImage(frame);
                 Graphics2D g2d = bufferedImage.createGraphics();
 
-                // System.out.println("");
-                // System.out.println("");
-                //
-                // Font fonts[] = ge.getAllFonts();
-                // for(Font f : fonts) System.out.println(f);
-                // System.out.println("");
-                // System.out.println("");
-
-                // Font f = new Font("DFKai-SB", Font.PLAIN, 60);
                 g2d.setFont(customFont);
 
                 String[] lines = findSavedLineResp.getLine().split(System.lineSeparator());
                 G2DSybtitleConfig config = new G2DSybtitleConfig(
                         bufferedImage.getWidth(),
                         bufferedImage.getHeight(),
-                        5, 1, 0.9);
+                        5, Color.BLACK, Color.WHITE, 1, 1);
+
+                if(style.equalsIgnoreCase(Constant.capScreenStyle.get(1))){
+                    config.setInnerColor(Color.YELLOW);
+                    config.setYScale(0.9);
+                }
 
                 drawSubtitle(g2d, lines, config);
 
@@ -228,7 +239,12 @@ public class SavedLineServiceImpl {
                 String screenCapPath = ServletUriComponentsBuilder.fromCurrentContextPath().path(sssss).toUriString();
                 form.setPath(screenCapPath);
 
-                SavedLineEntity.Builder test = findSavedLineResp.toBuilder().screenCapPath(sssss);
+                SavedLineEntity.Builder test = findSavedLineResp.toBuilder();
+                if (style.equalsIgnoreCase(Constant.capScreenStyle.get(0))){
+                    test.screenCapPath(sssss);
+                }else {
+                    test.soapOperaScnCapPath(sssss);
+                }
                 savedLineRepository.save(test.build());
             } catch (FrameGrabber.Exception e) {
                 throw new RuntimeException(e);
@@ -262,26 +278,26 @@ public class SavedLineServiceImpl {
         for (int lineCount = lines.length - 1; lineCount >= 0; lineCount--) {
             int width = fm.stringWidth(lines[lineCount]);
             // make subtitle line center
-            int xPos = ((int) (config.width() / config.xScale()) - width) / 2;
+            int xPos = ((int) (config.getWidth() / config.getXScale()) - width) / 2;
             // set y coordinate to 40px higher than bottom of the image;
             // if there are multiple lines, set the line by one line upper
-            int yPos = (int) (config.height() / config.yScale()) - fm.getHeight() - fm.getHeight() * lineCount - 40
+            int yPos = (int) (config.getHeight() / config.getYScale()) - fm.getHeight() - fm.getHeight() * lineCount - 40
                     + fm.getAscent();
 
             AffineTransform at = g2d.getTransform();
             at.setTransform(at);
-            at.scale(config.xScale(), config.yScale());
+            at.scale(config.getXScale(), config.getYScale());
             g2d.setTransform(at);
 
-            g2d.setColor(Color.BLACK); // todo add to G2DSubtitleConfig object
+            g2d.setColor(config.getBorderColor()); // todo add to G2DSubtitleConfig object
             // Draw the outline
-            for (int x = -config.offset(); x <= config.offset(); x += 1) {
-                for (int y = -config.offset(); y <= config.offset(); y += 1) {
+            for (int x = -config.getOffset(); x <= config.getOffset(); x += 1) {
+                for (int y = -config.getOffset(); y <= config.getOffset(); y += 1) {
                     g2d.drawString(lines[lineCount], xPos + x, yPos + y);
                 }
             }
 
-            g2d.setColor(Color.YELLOW); // todo add to G2DSubtitleConfig object
+            g2d.setColor(config.getInnerColor()); // todo add to G2DSubtitleConfig object
             g2d.drawString(lines[lineCount], xPos, yPos);
 
         }

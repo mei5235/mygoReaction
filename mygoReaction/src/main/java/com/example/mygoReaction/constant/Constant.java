@@ -1,5 +1,8 @@
 package com.example.mygoReaction.constant;
 
+import java.util.Arrays;
+import java.util.List;
+
 public interface Constant {
     // path
     String MYGO_REACTION_ASSET = "C:/Code/mygoReaction/asset/";
@@ -13,6 +16,7 @@ public interface Constant {
     String INSUFFICIENT＿AUGMENT＿DETERMIND＿SEARCH＿METHOD = "Missing augments. Cannot determine searching criteria since both line and timestamp is empty.";
     String MISSING＿SERIES＿INFO = "Missing augments. Insufficient info for finding anime series.";
     String NO＿RECORD = "No Record found.";
+    String UNKNOW_STYLE = "Unknown Screen Style.";
     String SUCCESS = "Success.";
     // db related
     String CREATEDBY = "Spting Boot";
@@ -21,4 +25,6 @@ public interface Constant {
         String MKV = "mkv";
         String PNG = "png";
     }
+
+    List<String> capScreenStyle = Arrays.asList("Standard", "Soap_Opera");
 }

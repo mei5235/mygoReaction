@@ -35,6 +35,9 @@ public class SavedLineEntity {
     @Column(name = "screen_cap_path")
     private String screenCapPath;
 
+    @Column(name = "soap_opera_scn_cap_path")
+    private String soapOperaScnCapPath;
+
     private String created_by;
 
     @CreationTimestamp
