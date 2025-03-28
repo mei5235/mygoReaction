@@ -255,8 +255,14 @@ public class SavedLineServiceImpl {
             }
         } else {
             // get path in DB directly and return
+            String path;
+            if(style.equalsIgnoreCase(Constant.capScreenStyle.get(0))) {
+                path = findSavedLineResp.getScreenCapPath();
+            }else{
+                path = findSavedLineResp.getSoapOperaScnCapPath();
+            }
             String screenCapPath = ServletUriComponentsBuilder.fromCurrentContextPath()
-                    .path(findSavedLineResp.getScreenCapPath()).toUriString();
+                    .path(path).toUriString();
             form.setPath(screenCapPath);
             // todo check url is broken or not, remove the path in DB and call
             // getScreenCapFromVideo() for getting a new screenCap
