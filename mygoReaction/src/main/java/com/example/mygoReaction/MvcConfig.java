@@ -19,8 +19,8 @@ public class MvcConfig implements WebMvcConfigurer {
                 .addResourceLocations("file:" + MYGO_REACTION_ASSET);
     }
 
-    @Override
-    public void addInterceptors(InterceptorRegistry registry){
-        registry.addInterceptor(new RateLimitInterceptor()).addPathPatterns("/line/**");
-    }
+//    @Override
+//    public void addInterceptors(InterceptorRegistry registry){
+//        registry.addInterceptor(new RateLimitInterceptor()).addPathPatterns("/line/**");
+//    }
 }

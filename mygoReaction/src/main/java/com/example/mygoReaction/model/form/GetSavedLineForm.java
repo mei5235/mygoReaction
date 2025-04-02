@@ -1,6 +1,7 @@
 package com.example.mygoReaction.model.form;
 
 import com.example.mygoReaction.entity.SavedLineEntity;
+import com.example.mygoReaction.model.dto.SavedLineDto;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,7 +11,7 @@ import java.util.List;
 @Getter
 @Setter
 public class GetSavedLineForm extends GenericForm{
-    List<SavedLineEntity> savedLineEntityResp;
+    List<SavedLineDto> savedLineEntityResp;
 
     public GetSavedLineForm() {
     }
@@ -19,7 +20,7 @@ public class GetSavedLineForm extends GenericForm{
         super(code, message);
     }
 
-    public GetSavedLineForm(Integer code, String message, List<SavedLineEntity> savedLineEntityResp) {
+    public GetSavedLineForm(Integer code, String message, List<SavedLineDto> savedLineEntityResp) {
         super(code, message);
         this.savedLineEntityResp = savedLineEntityResp;
     }

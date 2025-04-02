@@ -3,6 +3,7 @@ package com.example.mygoReaction.service.Impl;
 import com.example.mygoReaction.entity.SavedSeriesEntity;
 import com.example.mygoReaction.entity.SavedLineEntity;
 import com.example.mygoReaction.model.G2DSybtitleConfig;
+import com.example.mygoReaction.model.dto.SavedLineDto;
 import com.example.mygoReaction.model.dto.Test2Dto;
 import com.example.mygoReaction.model.dto.SearchLineForm;
 import com.example.mygoReaction.model.form.GenericForm;
@@ -70,7 +71,7 @@ public class SavedLineServiceImpl {
      * @return response form object with the records which matching the criteria
      */
     public GenericForm findByKeyword(Test2Dto t2d) {
-        List<SavedLineEntity> resp = savedLineRepository.findByLineContaining(t2d.getSeries_id(), t2d.getLine());
+        List<SavedLineDto> resp = savedLineRepository.findByLineContaining(t2d.getSeries_id(), t2d.getLine());
         return new GetSavedLineForm(0, "success", resp);
     }
 
@@ -99,7 +100,7 @@ public class SavedLineServiceImpl {
                 searchLineForm.getSeason(),
                 searchLineForm.getEpisode());
 
-        List<SavedLineEntity> savedLineEntityResp = null;
+        List<SavedLineDto> savedLineEntityResp = null;
         if (isSearchByLine) {
             Integer id = savedSeriesResp.map(SavedSeriesEntity::getSeriesId).orElse(null);
             savedLineEntityResp = savedLineRepository.findByLineContaining(id, searchLineForm.getLine());
