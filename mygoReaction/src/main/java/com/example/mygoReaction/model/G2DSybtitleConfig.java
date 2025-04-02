@@ -33,5 +33,4 @@ public class G2DSybtitleConfig {
                 "yScale=" + yScale + ']';
     }
 
-
 }

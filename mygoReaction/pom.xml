@@ -85,6 +85,13 @@
 			<artifactId>ffmpeg-platform</artifactId>
 			<version>7.1-1.5.11</version> <!-- Use the latest version -->
 		</dependency>
+
+		<dependency>
+			<groupId>com.bucket4j</groupId>
+			<artifactId>bucket4j-core</artifactId>
+			<version>8.1.0</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>
