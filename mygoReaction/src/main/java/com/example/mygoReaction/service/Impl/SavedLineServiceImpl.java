@@ -130,7 +130,7 @@ public class SavedLineServiceImpl {
         return new GetSavedLineForm(0, Constant.SUCCESS, savedLineEntityResp);
     }
 
-    public GenericForm getScreenCapFromVideo(Integer savedLineid, String style) {
+    public GenericForm getScreenCapFromVideo(Integer savedLineId, String style) {
         HeheForm form = new HeheForm();
 
         if (Constant.capScreenStyle.stream().noneMatch(style::equalsIgnoreCase)){
@@ -138,7 +138,7 @@ public class SavedLineServiceImpl {
             return new GenericForm(1, Constant.UNKNOW_STYLE);
         }
 
-        SavedLineEntity findSavedLineResp = savedLineRepository.findBySavedLineId(savedLineid).orElse(null);
+        SavedLineEntity findSavedLineResp = savedLineRepository.findBySavedLineId(savedLineId).orElse(null);
 
         if (findSavedLineResp == null) {
             log.error(Constant.NO＿RECORD);
