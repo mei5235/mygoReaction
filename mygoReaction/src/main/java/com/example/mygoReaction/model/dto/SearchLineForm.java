@@ -8,7 +8,7 @@ import java.time.Instant;
 @Getter
 @Setter
 public class SearchLineForm {
-    Integer seriesId;
+//    Integer seriesId;
     String seriesName;
     Integer season;
     Integer episode;

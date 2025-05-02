@@ -4,11 +4,10 @@ import com.example.mygoReaction.entity.SavedSeriesEntity;
 import com.example.mygoReaction.entity.SavedLineEntity;
 import com.example.mygoReaction.model.G2DSybtitleConfig;
 import com.example.mygoReaction.model.dto.SavedLineDto;
-import com.example.mygoReaction.model.dto.Test2Dto;
 import com.example.mygoReaction.model.dto.SearchLineForm;
-import com.example.mygoReaction.model.form.GenericForm;
-import com.example.mygoReaction.model.form.GetSavedLineForm;
-import com.example.mygoReaction.model.form.HeheForm;
+import com.example.mygoReaction.model.resp.GenericResp;
+import com.example.mygoReaction.model.resp.GetSavedLineResp;
+import com.example.mygoReaction.model.resp.GetScreenCapFromVideoResp;
 import com.example.mygoReaction.repository.SavedSeriesRepository;
 import com.example.mygoReaction.repository.SavedLineRepository;
 import com.example.mygoReaction.service.SubtitleExtractService;
@@ -17,10 +16,8 @@ import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameGrabber;
 import org.bytedeco.javacv.Java2DFrameConverter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -36,7 +33,6 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,8 +43,6 @@ import com.example.mygoReaction.constant.Constant;
 @Slf4j
 @Service
 public class SavedLineServiceImpl {
-    @Autowired
-    ResourceLoader resourceLoader;
 
     SubtitleExtractService subtitleExtractService;
 
@@ -65,23 +59,12 @@ public class SavedLineServiceImpl {
     }
 
     /**
-     * List all saved_line record matching the searching criteria
-     * 
-     * @param t2d data form object for searching the line
-     * @return response form object with the records which matching the criteria
-     */
-    public GenericForm findByKeyword(Test2Dto t2d) {
-        List<SavedLineDto> resp = savedLineRepository.findByLineContaining(t2d.getSeries_id(), t2d.getLine());
-        return new GetSavedLineForm(0, "success", resp);
-    }
-
-    /**
      * get the list of scene info which specified by users
      * 
      * @param searchLineForm form object for storing the searching parameters
      * @return GenericForm object which store the screen cap URL and other info
      */
-    public GenericForm getSavedLines(SearchLineForm searchLineForm) {
+    public GenericResp getSavedLines(SearchLineForm searchLineForm) {
         boolean isSearchByLine = false, isSearchByTimestamp = false;
 
         if (!(searchLineForm.getLine() == null || searchLineForm.getLine().isBlank())) {
@@ -92,7 +75,7 @@ public class SavedLineServiceImpl {
         }
         if (!isSearchByLine && !isSearchByTimestamp) {
             log.error(Constant.INSUFFICIENT＿AUGMENT＿DETERMIND＿SEARCH＿METHOD);
-            return new GenericForm(1, Constant.INSUFFICIENT＿AUGMENT＿DETERMIND＿SEARCH＿METHOD);
+            return new GenericResp(1, Constant.INSUFFICIENT＿AUGMENT＿DETERMIND＿SEARCH＿METHOD);
         }
 
         Optional<SavedSeriesEntity> savedSeriesResp = savedSeriesRepository.findBySeriesNameAndSeasonAndEpisode(
@@ -111,12 +94,12 @@ public class SavedLineServiceImpl {
                     || searchLineForm.getEpisode() == null
                     || searchLineForm.getSeriesName().isBlank()) {
                 log.error(Constant.MISSING＿SERIES＿INFO);
-                return new GenericForm(1, Constant.MISSING＿SERIES＿INFO);
+                return new GenericResp(1, Constant.MISSING＿SERIES＿INFO);
             }
 
             if (savedSeriesResp.isEmpty()) {
                 log.error(Constant.NO＿RECORD);
-                return new GenericForm(1, Constant.NO＿RECORD);
+                return new GenericResp(1, Constant.NO＿RECORD);
             }
 
             savedLineEntityResp = savedLineRepository.findBySeriesIdAndTimestamp(savedSeriesResp.get()
@@ -124,25 +107,25 @@ public class SavedLineServiceImpl {
         }
         if (savedLineEntityResp.isEmpty()) {
             log.error(Constant.NO＿RECORD);
-            return new GenericForm(1, Constant.NO＿RECORD);
+            return new GenericResp(1, Constant.NO＿RECORD);
         }
 
-        return new GetSavedLineForm(0, Constant.SUCCESS, savedLineEntityResp);
+        return new GetSavedLineResp(0, Constant.SUCCESS, savedLineEntityResp);
     }
 
-    public GenericForm getScreenCapFromVideo(Integer savedLineId, String style) {
-        HeheForm form = new HeheForm();
+    public GenericResp getScreenCapFromVideo(Integer savedLineId, String style) {
+        GetScreenCapFromVideoResp form = new GetScreenCapFromVideoResp();
 
         if (Constant.capScreenStyle.stream().noneMatch(style::equalsIgnoreCase)){
             log.error(Constant.UNKNOW_STYLE);
-            return new GenericForm(1, Constant.UNKNOW_STYLE);
+            return new GenericResp(1, Constant.UNKNOW_STYLE);
         }
 
         SavedLineEntity findSavedLineResp = savedLineRepository.findBySavedLineId(savedLineId).orElse(null);
 
         if (findSavedLineResp == null) {
             log.error(Constant.NO＿RECORD);
-            return new GenericForm(1, Constant.NO＿RECORD);
+            return new GenericResp(1, Constant.NO＿RECORD);
         }
 
         SavedSeriesEntity findSavedSeriesResp = savedSeriesRepository.findBySeriesId(findSavedLineResp.getSeriesId())
