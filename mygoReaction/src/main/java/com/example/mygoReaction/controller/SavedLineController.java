@@ -28,6 +28,7 @@ public class SavedLineController {
      * @param searchLineForm form object for storing the searching parameters
      * @return GenericForm object which store the screen cap URL and other info
      */
+    @CrossOrigin
     @RequestMapping(method = RequestMethod.POST, value="/getSavedLines")
     public ResponseEntity<GenericResp> getSavedLines(@RequestBody SearchLineForm searchLineForm){
         GenericResp form = null;
@@ -54,7 +55,7 @@ public class SavedLineController {
     public ResponseEntity<GenericResp> getScreenCapFromVideo(@RequestBody GetScreenCapFromVideoReq req) {
         GenericResp hehe = null;
         try {
-            hehe = savedLineServiceImpl.getScreenCapFromVideo(req.getSavedLineId(), req.getStyle());
+            hehe = savedLineServiceImpl.getScreenCapFromVideo(req.getSavedLineId(), req.getStyle(), false);
         } catch (Exception e) {
             log.error("error");
             log.error(e.getMessage(),e);
