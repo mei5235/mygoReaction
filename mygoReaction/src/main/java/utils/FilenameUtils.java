@@ -11,15 +11,34 @@ public class FilenameUtils {
         return fileName.substring(0, lastDotIndex);
     }
 
-    public static String getUniqueOutputFilename(String origName) {
-        int lastDotIndex = origName.lastIndexOf('.');
-        String[] filenameNext = {origName.substring(0,lastDotIndex),origName.substring(lastDotIndex)};
+//    public static String getUniqueOutputFilename(String origName) {
+//        int lastDotIndex = origName.lastIndexOf('.');
+//        String[] filenameNext = {origName.substring(0,lastDotIndex),origName.substring(lastDotIndex)};
+//        String[] range = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".split("");
+//        StringBuilder sb = new StringBuilder().append(filenameNext[0]).append("_");
+//        Random rng = new Random();
+//        for (int i = 0; i<8; i++){
+//            sb.append(range[rng.nextInt(62)]);
+//        }
+//        return sb.append(filenameNext[1]).toString();
+//    }
+
+    public static String getUniqueOutputFilename(String origname) {
+        int lastDoxIndex = origname.lastIndexOf(".");
         String[] range = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".split("");
-        StringBuilder sb = new StringBuilder().append(filenameNext[0]).append("_");
+        StringBuilder sb = new StringBuilder();
         Random rng = new Random();
-        for (int i = 0; i<8; i++){
-            sb.append(range[rng.nextInt(62)]);
+        if (lastDoxIndex < 0){
+            sb.append(origname).append("_");
+            for (int i = 0; i<8; i++){
+                sb.append(range[rng.nextInt(62)]);
+            }
+            return sb.toString();
         }
-        return sb.append(filenameNext[1]).toString();
+        for (int i = 0; i<8; i++){
+            sb.insert(lastDoxIndex, range[rng.nextInt(62)]);
+        }
+        sb.insert(lastDoxIndex, "_");
+        return sb.toString();
     }
 }

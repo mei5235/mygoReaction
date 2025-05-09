@@ -65,46 +65,10 @@ public class SavedLineServiceImpl {
      * @return GenericForm object which store the screen cap URL and other info
      */
     public GenericResp getSavedLines(SearchLineForm searchLineForm) {
-        boolean isSearchByLine = false, isSearchByTimestamp = false;
-
-        if (!(searchLineForm.getLine() == null || searchLineForm.getLine().isBlank())) {
-            isSearchByLine = true;
-        }
-        if (!(searchLineForm.getStartTime() == null)) {
-            isSearchByTimestamp = true;
-        }
-        if (!isSearchByLine && !isSearchByTimestamp) {
-            log.error(Constant.INSUFFICIENT＿AUGMENT＿DETERMIND＿SEARCH＿METHOD);
-            return new GenericResp(1, Constant.INSUFFICIENT＿AUGMENT＿DETERMIND＿SEARCH＿METHOD);
-        }
-
-        Optional<SavedSeriesEntity> savedSeriesResp = savedSeriesRepository.findBySeriesNameAndSeasonAndEpisode(
-                searchLineForm.getSeriesName(),
-                searchLineForm.getSeason(),
-                searchLineForm.getEpisode());
 
         List<SavedLineDto> savedLineEntityResp = null;
-        if (isSearchByLine) {
-            Integer id = savedSeriesResp.map(SavedSeriesEntity::getSeriesId).orElse(null);
-            savedLineEntityResp = savedLineRepository.findByLineContaining(id, searchLineForm.getLine());
-        }
-        if (isSearchByTimestamp) {
-            if (searchLineForm.getSeason() == null
-                    || searchLineForm.getSeriesName() == null
-                    || searchLineForm.getEpisode() == null
-                    || searchLineForm.getSeriesName().isBlank()) {
-                log.error(Constant.MISSING＿SERIES＿INFO);
-                return new GenericResp(1, Constant.MISSING＿SERIES＿INFO);
-            }
+        savedLineEntityResp = savedLineRepository.findByLineContaining(searchLineForm.getSeriesId(), searchLineForm.getLine());
 
-            if (savedSeriesResp.isEmpty()) {
-                log.error(Constant.NO＿RECORD);
-                return new GenericResp(1, Constant.NO＿RECORD);
-            }
-
-            savedLineEntityResp = savedLineRepository.findBySeriesIdAndTimestamp(savedSeriesResp.get()
-                    .getSeriesId(), searchLineForm.getStartTime());
-        }
         if (savedLineEntityResp.isEmpty()) {
             log.error(Constant.NO＿RECORD);
             return new GenericResp(1, Constant.NO＿RECORD);
@@ -113,7 +77,7 @@ public class SavedLineServiceImpl {
         return new GetSavedLineResp(0, Constant.SUCCESS, savedLineEntityResp);
     }
 
-    public GenericResp getScreenCapFromVideo(Integer savedLineId, String style) {
+    public GenericResp getScreenCapFromVideo(Integer savedLineId, String style, boolean isForce) {
         GetScreenCapFromVideoResp form = new GetScreenCapFromVideoResp();
 
         if (Constant.capScreenStyle.stream().noneMatch(style::equalsIgnoreCase)){
@@ -135,9 +99,9 @@ public class SavedLineServiceImpl {
                 + String.format("%02d", findSavedSeriesResp.getSeason()) + "-E"
                 + String.format("%02d", findSavedSeriesResp.getEpisode());
         String videoFilePath = Constant.MYGO_REACTION_ASSET + Constant.VIDEO_FOLDERNAME
-                + findSavedSeriesResp.getSeriesName() + "/" + videoFilename + "." + Constant.extension.MKV;
-        String outputFilename = FilenameUtils.getUniqueOutputFilename(videoFilename + "." + Constant.extension.PNG);
-        String outputFilePath = Constant.MYGO_REACTION_ASSET + Constant.SCREEN_CAP + outputFilename;
+                + findSavedSeriesResp.getSeriesName();
+        String outputFilename = FilenameUtils.getUniqueOutputFilename(videoFilename);
+        String outputFilePath = Constant.MYGO_REACTION_ASSET + Constant.SCREEN_CAP;
 
         // check line presented in findSavedLineResp. if not, save the screenshot as png
         // and write the relative path to saved_line
@@ -147,12 +111,13 @@ public class SavedLineServiceImpl {
                 || findSavedLineResp.getSoapOperaScnCapPath().isEmpty();
 
         if (style.equalsIgnoreCase(Constant.capScreenStyle.get(0)) && isStandardScreenCapEmpty
-                || style.equalsIgnoreCase(Constant.capScreenStyle.get(1)) && isSoapOperaScreenCapEmpty) {
+                || style.equalsIgnoreCase(Constant.capScreenStyle.get(1)) && isSoapOperaScreenCapEmpty
+                || isForce) {
             // if(true){
             File videoFile = null;
 
             try {
-                videoFile = new File(videoFilePath);
+                videoFile = new File(videoFilePath,videoFilename + "." + Constant.extension.MKV);
             } catch (Exception e) {
                 log.error(e.getMessage(), e);
                 throw new RuntimeException(e);
@@ -161,23 +126,7 @@ public class SavedLineServiceImpl {
             try (
                     FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoFile);
                     Java2DFrameConverter converter = new Java2DFrameConverter();) {
-                grabber.start();
-                // get max timestamp of the video
-                long timeLength = grabber.getLengthInTime();
-
-                // get initial timestamp
-                Frame frame = grabber.grabImage();
-                long startTime = frame.timestamp;
-
-                // int second = 60;
-                Instant he = Instant.parse("1970-01-01T00:00:00.000+08:00");
-                // Instant startTimestamp = Instant.parse("1970-01-01T00:01:00.123+08:00");
-                // long second = he.until(startTimestamp, ChronoUnit.SECONDS);
-                long second = he.until(findSavedLineResp.getStartTime(), ChronoUnit.SECONDS);
-                long timestamp = startTime + second * 1000000L; // 1 minute and 123 milliseconds
-
-                grabber.setTimestamp(timestamp);
-                frame = grabber.grabImage();
+                Frame frame = getFrame(grabber, findSavedLineResp);
 
                 if (frame == null) {
                     log.error("Error occurred when saving the screen cap.");
@@ -215,11 +164,11 @@ public class SavedLineServiceImpl {
                 // Dispose graphics
                 g2d.dispose();
 
-                ImageIO.write(bufferedImage, "png", new File(outputFilePath));
-                log.info("Frame extracted and saved as " + outputFilename);
+                ImageIO.write(bufferedImage, "png", new File(outputFilePath,outputFilename+"."+ Constant.extension.PNG));
+                log.info("Frame extracted and saved as " + outputFilename +"."+ Constant.extension.PNG);
 
                 grabber.stop();
-                String sssss = "/static/screen_cap/" + outputFilename;
+                String sssss = "/static/screen_cap/" + outputFilename +"."+ Constant.extension.PNG;
                 String screenCapPath = ServletUriComponentsBuilder.fromCurrentContextPath().path(sssss).toUriString();
                 form.setPath(screenCapPath);
 
@@ -245,15 +194,38 @@ public class SavedLineServiceImpl {
             }else{
                 path = findSavedLineResp.getSoapOperaScnCapPath();
             }
-            String screenCapPath = ServletUriComponentsBuilder.fromCurrentContextPath()
-                    .path(path).toUriString();
-            form.setPath(screenCapPath);
-            // todo check url is broken or not, remove the path in DB and call
-            // getScreenCapFromVideo() for getting a new screenCap
+            if(! new File(path.replace("/static/",Constant.MYGO_REACTION_ASSET)).exists()){
+                return this.getScreenCapFromVideo(savedLineId,style, true);
+            }else{
+                String screenCapPath = ServletUriComponentsBuilder.fromCurrentContextPath()
+                        .path(path).toUriString();
+                form.setPath(screenCapPath);
+            }
         }
         form.setCode(0);
         form.setMessage("success");
         return form;
+    }
+
+    public static Frame getFrame(FFmpegFrameGrabber grabber, SavedLineEntity findSavedLineResp) throws FFmpegFrameGrabber.Exception {
+        grabber.start();
+        // get max timestamp of the video
+        long timeLength = grabber.getLengthInTime();
+
+        // get initial timestamp
+        Frame frame = grabber.grabImage();
+        long startTime = frame.timestamp;
+
+        // int second = 60;
+        Instant he = Instant.parse("1970-01-01T00:00:00.000+08:00");
+        // Instant startTimestamp = Instant.parse("1970-01-01T00:01:00.123+08:00");
+        // long second = he.until(startTimestamp, ChronoUnit.SECONDS);
+        long second = he.until(findSavedLineResp.getStartTime(), ChronoUnit.SECONDS);
+        long timestamp = startTime + second * 1000000L; // 1 minute and 123 milliseconds
+
+        grabber.setTimestamp(timestamp);
+        frame = grabber.grabImage();
+        return frame;
     }
 
     /**
