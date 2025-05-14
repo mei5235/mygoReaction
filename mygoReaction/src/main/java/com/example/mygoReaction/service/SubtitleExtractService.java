@@ -9,5 +9,5 @@ import java.io.File;
 import java.io.IOException;
 
 public interface SubtitleExtractService {
-    public Boolean insertSubtitleIntoDB(File subtitleFile, Integer seriesId) throws IOException;
+    public boolean insertSubtitleIntoDB(File subtitleFile, Integer seriesId) throws IOException;
 }

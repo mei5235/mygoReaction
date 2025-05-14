@@ -2,7 +2,7 @@ package com.example.mygoReaction.service.Impl;
 
 import com.example.mygoReaction.entity.SavedSeriesEntity;
 import com.example.mygoReaction.entity.SavedLineEntity;
-import com.example.mygoReaction.model.G2DSybtitleConfig;
+import com.example.mygoReaction.model.G2DSubtitleConfig;
 import com.example.mygoReaction.model.dto.SavedLineDto;
 import com.example.mygoReaction.model.dto.SearchLineForm;
 import com.example.mygoReaction.model.resp.GenericResp;
@@ -29,13 +29,15 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
+import static utils.CvUtils.*;
 import static utils.FilenameUtils.removeFileExtension;
 
 import com.example.mygoReaction.constant.Constant;
@@ -43,9 +45,9 @@ import com.example.mygoReaction.constant.Constant;
 @Slf4j
 @Service
 public class SavedLineServiceImpl {
+    private final Map<String, Font> fontCache = new ConcurrentHashMap<>();
 
     SubtitleExtractService subtitleExtractService;
-
     private final SavedLineRepository savedLineRepository;
     private final SavedSeriesRepository savedSeriesRepository;
 
@@ -58,14 +60,7 @@ public class SavedLineServiceImpl {
         this.subtitleExtractService = subtitleExtractService;
     }
 
-    /**
-     * get the list of scene info which specified by users
-     * 
-     * @param searchLineForm form object for storing the searching parameters
-     * @return GenericForm object which store the screen cap URL and other info
-     */
     public GenericResp getSavedLines(SearchLineForm searchLineForm) {
-
         List<SavedLineDto> savedLineEntityResp = null;
         savedLineEntityResp = savedLineRepository.findByLineContaining(searchLineForm.getSeriesId(), searchLineForm.getLine());
 
@@ -103,8 +98,6 @@ public class SavedLineServiceImpl {
         String outputFilename = FilenameUtils.getUniqueOutputFilename(videoFilename);
         String outputFilePath = Constant.MYGO_REACTION_ASSET + Constant.SCREEN_CAP;
 
-        // check line presented in findSavedLineResp. if not, save the screenshot as png
-        // and write the relative path to saved_line
         boolean isStandardScreenCapEmpty = findSavedLineResp.getScreenCapPath() == null
                 || findSavedLineResp.getScreenCapPath().isEmpty();
         boolean isSoapOperaScreenCapEmpty = findSavedLineResp.getSoapOperaScnCapPath() == null
@@ -113,40 +106,35 @@ public class SavedLineServiceImpl {
         if (style.equalsIgnoreCase(Constant.capScreenStyle.get(0)) && isStandardScreenCapEmpty
                 || style.equalsIgnoreCase(Constant.capScreenStyle.get(1)) && isSoapOperaScreenCapEmpty
                 || isForce) {
-            // if(true){
             File videoFile = null;
 
             try {
-                videoFile = new File(videoFilePath,videoFilename + "." + Constant.extension.MKV);
+                videoFile = new File(videoFilePath, videoFilename + "." + Constant.extension.MKV);
             } catch (Exception e) {
                 log.error(e.getMessage(), e);
                 throw new RuntimeException(e);
             }
 
-            try (
-                    FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoFile);
-                    Java2DFrameConverter converter = new Java2DFrameConverter();) {
+            try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoFile);
+                 Java2DFrameConverter converter = new Java2DFrameConverter()) {
+
                 Frame frame = getFrame(grabber, findSavedLineResp);
 
                 if (frame == null) {
                     log.error("Error occurred when saving the screen cap.");
-                    throw new FrameGrabber.Exception("nNo frame grabbed.");
+                    throw new FrameGrabber.Exception("No frame grabbed.");
                 }
 
-                // use the same font type to Muse Anime HK
-                String fontFamilyName = "SourceHanSansHK-Bold.otf";
-                if(style.equalsIgnoreCase(Constant.capScreenStyle.get(1))){
-                    fontFamilyName = "TW-Kai-98_1.ttf";
-                }
-                ClassPathResource classPathResource = new ClassPathResource(fontFamilyName);
-                Font customFont = Font.createFont(Font.TRUETYPE_FONT, classPathResource.getFile()).deriveFont(60f);
-                GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-                ge.registerFont(customFont);
+                String fontFamilyName = style.equalsIgnoreCase(Constant.capScreenStyle.get(1))
+                        ? "TW-Kai-98_1.ttf"
+                        : "SourceHanSansHK-Bold.otf";
 
                 BufferedImage bufferedImage = converter.getBufferedImage(frame);
-                Graphics2D g2d = bufferedImage.createGraphics();
 
-                g2d.setFont(customFont);
+                Graphics2D g2d = bufferedImage.createGraphics();
+                // Enable anti-aliasing for better text quality
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
                 String[] lines = findSavedLineResp.getLine().split(System.lineSeparator());
                 G2DSubtitleConfig config = new G2DSubtitleConfig(
@@ -159,16 +147,15 @@ public class SavedLineServiceImpl {
                     config.setYScale(0.9);
                 }
 
-                drawSubtitle(g2d, lines, config);
-
-                // Dispose graphics
+                drawSubtitle(g2d, lines, config, fontFamilyName);
                 g2d.dispose();
 
-                ImageIO.write(bufferedImage, "png", new File(outputFilePath,outputFilename+"."+ Constant.extension.PNG));
-                log.info("Frame extracted and saved as " + outputFilename +"."+ Constant.extension.PNG);
+
+                ImageIO.write(bufferedImage, "png", new File(outputFilePath, outputFilename + "." + Constant.extension.PNG));
+                log.info("Frame extracted and saved as " + outputFilename + "." + Constant.extension.PNG);
 
                 grabber.stop();
-                String sssss = "/static/screen_cap/" + outputFilename +"."+ Constant.extension.PNG;
+                String sssss = "/static/screen_cap/" + outputFilename + "." + Constant.extension.PNG;
                 String screenCapPath = ServletUriComponentsBuilder.fromCurrentContextPath().path(sssss).toUriString();
                 form.setPath(screenCapPath);
 
@@ -179,24 +166,21 @@ public class SavedLineServiceImpl {
                     test.soapOperaScnCapPath(sssss);
                 }
                 savedLineRepository.save(test.build());
-            } catch (FrameGrabber.Exception e) {
-                throw new RuntimeException(e);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            } catch (FontFormatException e) {
-                throw new RuntimeException(e);
+            } catch (FFmpegFrameGrabber.Exception e) {
+                log.error("Error processing video: {}", e.getMessage());
+                return new GenericResp(1, "Error processing video: " + e.getMessage());
+            } catch (Exception e) {
+                log.error("Unexpected error: {}", e.getMessage());
+                return new GenericResp(1, "Unexpected error: " + e.getMessage());
             }
         } else {
-            // get path in DB directly and return
-            String path;
-            if(style.equalsIgnoreCase(Constant.capScreenStyle.get(0))) {
-                path = findSavedLineResp.getScreenCapPath();
-            }else{
-                path = findSavedLineResp.getSoapOperaScnCapPath();
-            }
-            if(! new File(path.replace("/static/",Constant.MYGO_REACTION_ASSET)).exists()){
-                return this.getScreenCapFromVideo(savedLineId,style, true);
-            }else{
+            String path = style.equalsIgnoreCase(Constant.capScreenStyle.get(0))
+                    ? findSavedLineResp.getScreenCapPath()
+                    : findSavedLineResp.getSoapOperaScnCapPath();
+
+            if(!new File(path.replace("/static/", Constant.MYGO_REACTION_ASSET)).exists()){
+                return this.getScreenCapFromVideo(savedLineId, style, true);
+            } else {
                 String screenCapPath = ServletUriComponentsBuilder.fromCurrentContextPath()
                         .path(path).toUriString();
                 form.setPath(screenCapPath);
@@ -205,64 +189,6 @@ public class SavedLineServiceImpl {
         form.setCode(0);
         form.setMessage("success");
         return form;
-    }
-
-    public static Frame getFrame(FFmpegFrameGrabber grabber, SavedLineEntity findSavedLineResp) throws FFmpegFrameGrabber.Exception {
-        grabber.start();
-        // get max timestamp of the video
-        long timeLength = grabber.getLengthInTime();
-
-        // get initial timestamp
-        Frame frame = grabber.grabImage();
-        long startTime = frame.timestamp;
-
-        // int second = 60;
-        Instant he = Instant.parse("1970-01-01T00:00:00.000+08:00");
-        // Instant startTimestamp = Instant.parse("1970-01-01T00:01:00.123+08:00");
-        // long second = he.until(startTimestamp, ChronoUnit.SECONDS);
-        long second = he.until(findSavedLineResp.getStartTime(), ChronoUnit.SECONDS);
-        long timestamp = startTime + second * 1000000L; // 1 minute and 123 milliseconds
-
-        grabber.setTimestamp(timestamp);
-        frame = grabber.grabImage();
-        return frame;
-    }
-
-    /**
-     * Draw subtitle on image
-     * 
-     * @param g2d    image context in Graphic2D
-     * @param lines  subtitle line (split with line separator)
-     * @param config config object
-     */
-    private void drawSubtitle(Graphics2D g2d, String[] lines, G2DSybtitleConfig config) {
-        FontMetrics fm = g2d.getFontMetrics();
-        for (int lineCount = lines.length - 1; lineCount >= 0; lineCount--) {
-            int width = fm.stringWidth(lines[lineCount]);
-            // make subtitle line center
-            int xPos = ((int) (config.getWidth() / config.getXScale()) - width) / 2;
-            // set y coordinate to 40px higher than bottom of the image;
-            // if there are multiple lines, set the line by one line upper
-            int yPos = (int) (config.getHeight() / config.getYScale()) - fm.getHeight() - fm.getHeight() * lineCount - 40
-                    + fm.getAscent();
-
-            AffineTransform at = g2d.getTransform();
-            at.setTransform(at);
-            at.scale(config.getXScale(), config.getYScale());
-            g2d.setTransform(at);
-
-            g2d.setColor(config.getBorderColor()); // todo add to G2DSubtitleConfig object
-            // Draw the outline
-            for (int x = -config.getOffset(); x <= config.getOffset(); x += 1) {
-                for (int y = -config.getOffset(); y <= config.getOffset(); y += 1) {
-                    g2d.drawString(lines[lineCount], xPos + x, yPos + y);
-                }
-            }
-
-            g2d.setColor(config.getInnerColor()); // todo add to G2DSubtitleConfig object
-            g2d.drawString(lines[lineCount], xPos, yPos);
-
-        }
     }
 
     @Transactional

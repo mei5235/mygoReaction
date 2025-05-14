@@ -32,12 +32,9 @@ public class AssSubtitleExtractServiceImpl implements SubtitleExtractService {
 
 
     @Override
-    public Boolean insertSubtitleIntoDB(File subtitleFile, Integer seriesId) throws IOException {
-        try(
-                FileReader fr = new FileReader(subtitleFile);
-                BufferedReader bfr = new BufferedReader(fr);
-        ){
-
+    public boolean insertSubtitleIntoDB(File subtitleFile, Integer seriesId) throws IOException {
+        try(BufferedReader bfr = new BufferedReader(new FileReader(subtitleFile));){
+            SavedLineEntity.Builder t2e = null;
             String line = "";
             while(!((line = bfr.readLine()) == null)){
                 if(!line.matches("Dialogue: [0-9:,\\.]+,Dial_CH,.+"))
@@ -50,14 +47,11 @@ public class AssSubtitleExtractServiceImpl implements SubtitleExtractService {
                 subArr = Arrays.stream(subArr)
                         .map(String::trim) //trim the space in each element // String::trim == str.trim()
                         .toArray(String[]::new);
+                t2e = initializeBuilder(seriesId);
+                t2e.startTime(parseTime(subArr[1]))
+                        .endTime(parseTime(subArr[2]))
+                        .line(subArr[9]);
 
-                SavedLineEntity.Builder t2e = SavedLineEntity.builder();
-                t2e.seriesId(seriesId)
-                        .startTime(Instant.parse("1970-01-01T"+String.format("%02d",Integer.parseInt(subArr[1]))+"+08:00"))
-                        .endTime(Instant.parse("1970-01-01T"+String.format("%02d",Integer.parseInt(subArr[2]))+"+08:00"))
-                        .line(subArr[9])
-                        .created_by(Constant.CREATEDBY)
-                        .updated_by(Constant.CREATEDBY);
                 savedLineRepository.save(t2e.build());
             }
             log.info("done import");
@@ -71,5 +65,20 @@ public class AssSubtitleExtractServiceImpl implements SubtitleExtractService {
             throw e;
         }
         return true;
+    }
+
+    private SavedLineEntity.Builder initializeBuilder(Integer seriesId) {
+        return SavedLineEntity.builder()
+                .seriesId(seriesId)
+                .created_by(Constant.CREATEDBY)
+                .updated_by(Constant.CREATEDBY);
+    }
+
+    private Instant parseTime(String time) {
+        String[] parts = time.split(":");
+        String hours = String.format("%02d", Integer.parseInt(parts[0]));
+        String minutes = String.format("%02d", Integer.parseInt(parts[1]));
+        String secondsAndMillis = parts[2];
+        return Instant.parse("1970-01-01T"+ hours + ":" + minutes + ":" + secondsAndMillis +"+08:00");
     }
 }
