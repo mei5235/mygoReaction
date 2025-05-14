@@ -11,4 +11,5 @@ public interface SavedLineDto {
     java.time.Instant getStartTime();
     java.time.Instant getEndTime();
     String getLine();
+    byte[] getThumbnail();
 }

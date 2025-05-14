@@ -5,6 +5,7 @@ import com.example.mygoReaction.entity.SavedLineEntity;
 import com.example.mygoReaction.model.G2DSubtitleConfig;
 import com.example.mygoReaction.model.dto.SavedLineDto;
 import com.example.mygoReaction.model.dto.SearchLineForm;
+import com.example.mygoReaction.model.dto.Test2Dto;
 import com.example.mygoReaction.model.resp.GenericResp;
 import com.example.mygoReaction.model.resp.GetSavedLineResp;
 import com.example.mygoReaction.model.resp.GetScreenCapFromVideoResp;
@@ -118,7 +119,11 @@ public class SavedLineServiceImpl {
             try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoFile);
                  Java2DFrameConverter converter = new Java2DFrameConverter()) {
 
-                Frame frame = getFrame(grabber, findSavedLineResp);
+                Test2Dto dto = new Test2Dto();
+                dto.setSeriesId(findSavedLineResp.getSeriesId());
+                dto.setStartTime(findSavedLineResp.getStartTime());
+                dto.setEndTime(findSavedLineResp.getEndTime());
+                Frame frame = getFrame(grabber, dto);
 
                 if (frame == null) {
                     log.error("Error occurred when saving the screen cap.");
@@ -224,7 +229,7 @@ public class SavedLineServiceImpl {
 
         // process the subtitle and record in test2 table
         try {
-            subtitleExtractService.insertSubtitleIntoDB(subtitleFile, savedSeriesResp.getSeriesId());
+            subtitleExtractService.insertSubtitleIntoDB(subtitleFile, savedSeriesResp);
         } catch (IOException e) {
             return new ResponseEntity<>(
                     "Error occurred when importing subtitles into DB.",

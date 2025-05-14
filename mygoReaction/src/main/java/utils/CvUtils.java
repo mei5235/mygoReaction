@@ -2,6 +2,7 @@ package utils;
 
 import com.example.mygoReaction.entity.SavedLineEntity;
 import com.example.mygoReaction.model.G2DSubtitleConfig;
+import com.example.mygoReaction.model.dto.Test2Dto;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
@@ -19,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CvUtils {
     private static final Map<String, Font> fontCache = new ConcurrentHashMap<>();
 
-    public static Frame getFrame(FFmpegFrameGrabber grabber, SavedLineEntity findSavedLineResp) throws FFmpegFrameGrabber.Exception {
+    public static Frame getFrame(FFmpegFrameGrabber grabber, Test2Dto findSavedLineResp) throws FFmpegFrameGrabber.Exception {
         if (findSavedLineResp == null || findSavedLineResp.getStartTime() == null) {
             throw new IllegalArgumentException("SavedLineEntity or StartTime cannot be null");
         }
@@ -37,7 +38,9 @@ public class CvUtils {
 
             // Calculate target timestamp in microseconds
             Instant referenceTime = Instant.parse("1970-01-01T00:00:00.000+08:00");
-            long targetMicros = referenceTime.until(findSavedLineResp.getStartTime(), ChronoUnit.MICROS);
+            long targetStartMicros = referenceTime.until(findSavedLineResp.getStartTime(), ChronoUnit.MICROS);
+            long targetEndMicros = referenceTime.until(findSavedLineResp.getEndTime(),ChronoUnit.MICROS);
+            long targetMicros = (targetStartMicros + targetEndMicros) / 2;
 //        long timestamp = startTime + second * 1000000L; // 1 minute and 123 milliseconds
 
             // Validate target time is within video duration

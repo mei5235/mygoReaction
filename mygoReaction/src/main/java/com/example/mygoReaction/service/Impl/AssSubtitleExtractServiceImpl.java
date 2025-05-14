@@ -2,6 +2,7 @@ package com.example.mygoReaction.service.Impl;
 
 import com.example.mygoReaction.entity.SavedLineEntity;
 import com.example.mygoReaction.constant.Constant;
+import com.example.mygoReaction.entity.SavedSeriesEntity;
 import com.example.mygoReaction.repository.SavedLineRepository;
 import com.example.mygoReaction.service.SubtitleExtractService;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +33,7 @@ public class AssSubtitleExtractServiceImpl implements SubtitleExtractService {
 
 
     @Override
-    public boolean insertSubtitleIntoDB(File subtitleFile, Integer seriesId) throws IOException {
+    public boolean insertSubtitleIntoDB(File subtitleFile, SavedSeriesEntity series) throws IOException {
         try(BufferedReader bfr = new BufferedReader(new FileReader(subtitleFile));){
             SavedLineEntity.Builder t2e = null;
             String line = "";
@@ -47,7 +48,7 @@ public class AssSubtitleExtractServiceImpl implements SubtitleExtractService {
                 subArr = Arrays.stream(subArr)
                         .map(String::trim) //trim the space in each element // String::trim == str.trim()
                         .toArray(String[]::new);
-                t2e = initializeBuilder(seriesId);
+                t2e = initializeBuilder(series.getSeriesId());
                 t2e.startTime(parseTime(subArr[1]))
                         .endTime(parseTime(subArr[2]))
                         .line(subArr[9]);
