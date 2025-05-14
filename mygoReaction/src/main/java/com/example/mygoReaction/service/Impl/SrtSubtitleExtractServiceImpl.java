@@ -2,18 +2,27 @@ package com.example.mygoReaction.service.Impl;
 
 import com.example.mygoReaction.entity.SavedLineEntity;
 import com.example.mygoReaction.constant.Constant;
+import com.example.mygoReaction.entity.SavedSeriesEntity;
+import com.example.mygoReaction.model.dto.Test2Dto;
+import com.example.mygoReaction.model.resp.GenericResp;
 import com.example.mygoReaction.repository.SavedLineRepository;
 import com.example.mygoReaction.service.SubtitleExtractService;
 import lombok.extern.slf4j.Slf4j;
+import net.coobird.thumbnailator.Thumbnails;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.Java2DFrameConverter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.*;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Arrays;
+
+import static utils.CvUtils.*;
 
 /**
  * Class for extracting line in the .srt subtitle file into DB records
@@ -32,7 +41,7 @@ public class SrtSubtitleExtractServiceImpl implements SubtitleExtractService {
 
 
     @Override
-    public boolean insertSubtitleIntoDB(File subtitleFile, Integer seriesId) throws IOException {
+    public boolean insertSubtitleIntoDB(File subtitleFile, SavedSeriesEntity series) throws IOException {
 //            Line Sample
 
 //            344
@@ -43,29 +52,70 @@ public class SrtSubtitleExtractServiceImpl implements SubtitleExtractService {
             StringBuilder contentBuilder = new StringBuilder();
             SavedLineEntity.Builder builder = null;
 
-            while ((line = bfr.readLine()) != null) {
-                line = line.replace("\uFEFF", "");
-
-                if (isLineNumber(line)) {
-                    saveCurrentSubtitle(builder, contentBuilder);
-                    builder = initializeBuilder(seriesId);
-                    contentBuilder.setLength(0);
-                } else if (isTimestamp(line)) {
-                    processTimestamp(builder, line);
-                } else if (!line.trim().isEmpty()) {
-                    appendContent(contentBuilder, line);
-                }
+            String videoFilename = series.getSeriesName() + "-S"
+                    + String.format("%02d", series.getSeason()) + "-E"
+                    + String.format("%02d", series.getEpisode());
+            String videoFilePath = Constant.MYGO_REACTION_ASSET + Constant.VIDEO_FOLDERNAME
+                    + series.getSeriesName();
+            File videoFile;
+            try {
+                videoFile = new File(videoFilePath, videoFilename + "." + Constant.extension.MKV);
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+                throw new RuntimeException(e);
             }
+            try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoFile);
+                ) {
+                Test2Dto dto;
+                while ((line = bfr.readLine()) != null) {
+                    line = line.replace("\uFEFF", "");
+                    dto = new Test2Dto();
+                    if (isLineNumber(line)) {
+                        builder = initializeBuilder(series.getSeriesId());
+                        contentBuilder.setLength(0);
+                    } else if (isTimestamp(line)) {
+                        processTimestamp(builder, line);
+                    } else if (!line.trim().isEmpty()) {
+                        appendContent(contentBuilder, line);
+                    }else{
+                        dto.setStartTime(builder.build().getStartTime());
+                        dto.setEndTime(builder.build().getEndTime());
+                        dto.setLine(builder.build().getLine());
+                        builder.thumbnail(getFrameHehe(grabber, dto));
+                        saveCurrentSubtitle(builder, contentBuilder);
+                    }
+                }
 
+                // Save the last subtitle
+//                saveCurrentSubtitle(builder, contentBuilder);
 
-            // Save the last subtitle
-            saveCurrentSubtitle(builder, contentBuilder);
-
-            log.info("Successfully imported subtitles");
+                log.info("Successfully imported subtitles");
+            }
             return true;
         } catch (Exception e) {
             log.error("Failed to import subtitles: {}", e.getMessage(), e);
             return false;
+        }
+    }
+
+    private byte[] getFrameHehe(FFmpegFrameGrabber grabber, Test2Dto dto) throws IOException {
+        try (Java2DFrameConverter converter = new Java2DFrameConverter();
+             ByteArrayOutputStream bStream = new ByteArrayOutputStream()
+        ) {
+            Frame frame = getFrame(grabber, dto);
+            BufferedImage image = converter.getBufferedImage(frame);
+
+            Thumbnails.Builder<BufferedImage> resized = Thumbnails.of(image);
+            resized.height(360);
+            ImageIO.write(resized.asBufferedImage(), "png", bStream);
+            grabber.stop();
+            return bStream.toByteArray();
+        } catch (FFmpegFrameGrabber.Exception e) {
+            log.error("Error processing video: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error: {}", e.getMessage());
+            throw e;
         }
     }
 
