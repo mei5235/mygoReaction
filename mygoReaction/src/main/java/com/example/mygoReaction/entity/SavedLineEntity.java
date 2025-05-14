@@ -48,4 +48,6 @@ public class SavedLineEntity {
 
     @UpdateTimestamp
     private java.time.Instant updated_timestamp;
+
+    private byte[] thumbnail;
 }
