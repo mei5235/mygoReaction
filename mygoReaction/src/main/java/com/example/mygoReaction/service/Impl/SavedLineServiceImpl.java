@@ -149,7 +149,7 @@ public class SavedLineServiceImpl {
                 g2d.setFont(customFont);
 
                 String[] lines = findSavedLineResp.getLine().split(System.lineSeparator());
-                G2DSybtitleConfig config = new G2DSybtitleConfig(
+                G2DSubtitleConfig config = new G2DSubtitleConfig(
                         bufferedImage.getWidth(),
                         bufferedImage.getHeight(),
                         5, Color.BLACK, Color.WHITE, 1, 1);

@@ -6,13 +6,12 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.awt.*;
-import java.util.Objects;
 
 @Setter
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class G2DSybtitleConfig {
+public class G2DSubtitleConfig {
     private int width;
     private int height;
     private int offset;
